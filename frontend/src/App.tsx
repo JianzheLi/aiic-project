@@ -33,6 +33,10 @@ function getApiBaseUrl() {
   return configured ? configured.replace(/\/$/, "") : "/api";
 }
 
+function createMessageId() {
+  return globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
 function App() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
@@ -77,7 +81,7 @@ function App() {
     }
 
     const userMessage: ChatMessage = {
-      id: crypto.randomUUID(),
+      id: createMessageId(),
       role: "user",
       content,
     };
@@ -109,7 +113,7 @@ function App() {
       setMessages((current) => [
         ...current,
         {
-          id: crypto.randomUUID(),
+          id: createMessageId(),
           role: "assistant",
           content: chatData.reply,
         },
