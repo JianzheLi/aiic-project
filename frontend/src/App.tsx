@@ -28,6 +28,9 @@ const starterPrompts = [
   "从评委视角挑出这个产品最该展示的亮点",
 ];
 
+const appVersion = import.meta.env.VITE_APP_VERSION || "dev";
+const buildTime = import.meta.env.VITE_BUILD_TIME || "local";
+
 function getApiBaseUrl() {
   const configured = import.meta.env.VITE_API_BASE_URL?.trim();
   return configured ? configured.replace(/\/$/, "") : "/api";
@@ -183,6 +186,11 @@ function App() {
             <Plus size={16} />
             <span>新对话</span>
           </button>
+
+          <div className="version-card" aria-label="版本信息">
+            <span>版本 {appVersion}</span>
+            <span>更新 {buildTime}</span>
+          </div>
         </aside>
 
         <div className="chat-panel">

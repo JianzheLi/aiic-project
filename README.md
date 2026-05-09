@@ -102,6 +102,12 @@ cp .env.example .env
 docker compose up -d --build
 ```
 
+如果要在界面显示当前 commit 和分钟级更新时间，推荐使用：
+
+```bash
+bash scripts/build-with-version.sh
+```
+
 查看服务状态：
 
 ```bash

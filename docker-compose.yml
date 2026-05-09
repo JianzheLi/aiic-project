@@ -15,6 +15,9 @@ services:
   frontend:
     build:
       context: ./frontend
+      args:
+        VITE_APP_VERSION: ${VITE_APP_VERSION:-${APP_VERSION:-dev}}
+        VITE_BUILD_TIME: ${VITE_BUILD_TIME:-${APP_BUILD_TIME:-local}}
     container_name: aiic-agent-frontend
     restart: unless-stopped
     ports:
