@@ -8,8 +8,8 @@ from pydantic import BaseModel, Field
 from starlette.concurrency import run_in_threadpool
 
 
-DEFAULT_BASE_URL = "https://api.openai.com/v1"
-DEFAULT_MODEL = "gpt-4o-mini"
+DEFAULT_BASE_URL = "https://api.deepseek.com"
+DEFAULT_MODEL = "deepseek-v4-flash"
 DEFAULT_SYSTEM_PROMPT = "你是一个中文友好的 AI Agent 产品挑战助手，回答要清晰、务实、可执行。"
 
 

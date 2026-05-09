@@ -19,3 +19,6 @@
 - 云服务器 demo 访问方式为 `http://服务器公网IP:3000`。
 - 后端健康检查为 `http://服务器公网IP:8000/health`。
 - 后续 OpenAI-compatible API 通过环境变量接入。
+
+## Git 控制
+- 在合适的一个功能完成后，需要提交git commit，并且push到远程上。

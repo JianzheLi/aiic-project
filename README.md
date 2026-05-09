@@ -1,6 +1,6 @@
 # AI Agent 产品挑战 MVP
 
-一个用于“16 小时 AI Agent 产品挑战”的最小可用全栈聊天应用。项目提供中文友好的聊天网页、FastAPI 后端、健康检查接口，并支持通过 OpenAI-compatible API 接入模型服务。
+一个用于“16 小时 AI Agent 产品挑战”的最小可用全栈聊天应用。项目提供中文友好的聊天网页、FastAPI 后端、健康检查接口，并默认通过 DeepSeek 的 OpenAI-compatible API 接入模型服务。
 
 ## 功能
 
@@ -36,8 +36,8 @@ cp .env.example .env
 | 变量 | 说明 | 示例 |
 | --- | --- | --- |
 | `OPENAI_API_KEY` | OpenAI-compatible API Key | `sk-...` |
-| `OPENAI_BASE_URL` | OpenAI-compatible API 地址 | `https://api.openai.com/v1` |
-| `MODEL_NAME` | 模型名称 | `gpt-4o-mini` |
+| `OPENAI_BASE_URL` | OpenAI-compatible API 地址，默认使用 DeepSeek | `https://api.deepseek.com` |
+| `MODEL_NAME` | 模型名称 | `deepseek-v4-flash` |
 | `SYSTEM_PROMPT` | 系统提示词 | `你是一个中文友好的助手...` |
 
 不要把真实 `.env` 提交到 Git。
@@ -59,8 +59,8 @@ cd backend
 uv venv
 uv pip install -r requirements.txt
 export OPENAI_API_KEY="你的 key"
-export OPENAI_BASE_URL="https://api.openai.com/v1"
-export MODEL_NAME="gpt-4o-mini"
+export OPENAI_BASE_URL="https://api.deepseek.com"
+export MODEL_NAME="deepseek-v4-flash"
 export SYSTEM_PROMPT="你是一个中文友好的 AI Agent 产品挑战助手，回答要清晰、务实、可执行。"
 uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
@@ -144,7 +144,7 @@ curl -X POST http://服务器公网IP:8000/chat \
   -d '{"messages":[{"role":"user","content":"你好，请用一句话介绍这个 demo。"}]}'
 ```
 
-如果 `/health` 正常但聊天失败，优先检查 `.env` 中的 `OPENAI_API_KEY`、`OPENAI_BASE_URL` 和 `MODEL_NAME`。
+如果 `/health` 正常但聊天失败，优先检查 `.env` 中的 `OPENAI_API_KEY`、`OPENAI_BASE_URL` 和 `MODEL_NAME`。DeepSeek 官方文档推荐 OpenAI-compatible `base_url` 使用 `https://api.deepseek.com`，模型可使用 `deepseek-v4-flash` 或 `deepseek-v4-pro`。
 
 ## 推送到 GitHub
 
