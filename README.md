@@ -9,6 +9,7 @@
 - 后端 `GET /health` 健康检查接口。
 - 支持 `OPENAI_API_KEY`、`OPENAI_BASE_URL`、`MODEL_NAME`、`SYSTEM_PROMPT` 环境变量。
 - Docker Compose 一键启动，前端端口 `3000`，后端端口 `8000`。
+- 浏览器只需要访问 `3000`；前端容器会把 `/api/*` 代理到后端。
 
 ## 目录结构
 
@@ -85,7 +86,7 @@ npm run dev
 http://localhost:3000
 ```
 
-前端默认会访问同一主机的 `8000` 端口，例如 `http://localhost:8000`。如需覆盖：
+前端默认请求同源 `/api`，由前端服务代理到后端。开发模式下 Vite 会把 `/api/*` 代理到 `http://localhost:8000`。如需覆盖：
 
 ```bash
 VITE_API_BASE_URL=http://localhost:8000 npm run dev
@@ -127,19 +128,25 @@ docker compose up -d --build
 4. 使用公网 IP 访问：
 
 ```text
-http://服务器公网IP:3000
+http://8.139.254.60:3000
 ```
 
-5. 测试后端健康检查：
+5. 测试 3000 端口同源代理：
 
 ```bash
-curl http://服务器公网IP:8000/health
+curl http://8.139.254.60:3000/api/config
 ```
 
-6. 测试聊天接口：
+6. 测试后端健康检查：
 
 ```bash
-curl -X POST http://服务器公网IP:8000/chat \
+curl http://8.139.254.60:8000/health
+```
+
+7. 测试聊天接口。推荐走 3000 端口代理，和浏览器路径一致：
+
+```bash
+curl -X POST http://8.139.254.60:3000/api/chat \
   -H "Content-Type: application/json" \
   -d '{"messages":[{"role":"user","content":"你好，请用一句话介绍这个 demo。"}]}'
 ```

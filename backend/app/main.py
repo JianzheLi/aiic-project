@@ -1,5 +1,6 @@
 import os
 from typing import Literal
+from urllib.parse import urlparse
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -25,6 +26,13 @@ class ChatRequest(BaseModel):
 class ChatResponse(BaseModel):
     reply: str
     model: str
+
+
+class ConfigResponse(BaseModel):
+    model: str
+    provider: str
+    api_base_url: str
+    api_key_configured: bool
 
 
 app = FastAPI(
@@ -57,9 +65,31 @@ def get_openai_client() -> OpenAI:
     return OpenAI(api_key=get_required_api_key(), base_url=base_url)
 
 
+def get_provider_name(base_url: str) -> str:
+    hostname = urlparse(base_url).hostname or base_url
+    if "deepseek" in hostname:
+        return "DeepSeek"
+    if "openai" in hostname:
+        return "OpenAI"
+    return hostname
+
+
 @app.get("/health")
 def health() -> dict[str, str]:
     return {"status": "ok", "service": "aiic-agent-backend"}
+
+
+@app.get("/config", response_model=ConfigResponse)
+def config() -> ConfigResponse:
+    base_url = os.getenv("OPENAI_BASE_URL", DEFAULT_BASE_URL).strip() or DEFAULT_BASE_URL
+    model = os.getenv("MODEL_NAME", DEFAULT_MODEL).strip() or DEFAULT_MODEL
+    api_key = os.getenv("OPENAI_API_KEY", "").strip()
+    return ConfigResponse(
+        model=model,
+        provider=get_provider_name(base_url),
+        api_base_url=base_url,
+        api_key_configured=bool(api_key and api_key != "replace-with-your-api-key"),
+    )
 
 
 @app.post("/chat", response_model=ChatResponse)

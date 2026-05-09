@@ -1,6 +1,8 @@
-import { FormEvent, useMemo, useRef, useState } from "react";
+import { FormEvent, KeyboardEvent, useEffect, useMemo, useRef, useState } from "react";
+import { AlertTriangle, Bot, Loader2, Plus, RefreshCw, Send, Sparkles, UserRound, Wifi } from "lucide-react";
 
 type ChatRole = "user" | "assistant";
+type ConnectionState = "checking" | "ready" | "missing-key" | "error";
 
 type ChatMessage = {
   id: string;
@@ -13,15 +15,22 @@ type ChatResponse = {
   model: string;
 };
 
+type ConfigResponse = {
+  model: string;
+  provider: string;
+  api_base_url: string;
+  api_key_configured: boolean;
+};
+
+const starterPrompts = [
+  "帮我把一个 AI Agent 产品想法拆成 3 个可验证功能",
+  "给我一份 16 小时 demo 的开发节奏",
+  "从评委视角挑出这个产品最该展示的亮点",
+];
+
 function getApiBaseUrl() {
   const configured = import.meta.env.VITE_API_BASE_URL?.trim();
-  if (configured) {
-    return configured.replace(/\/$/, "");
-  }
-
-  const protocol = window.location.protocol || "http:";
-  const hostname = window.location.hostname || "localhost";
-  return `${protocol}//${hostname}:8000`;
+  return configured ? configured.replace(/\/$/, "") : "/api";
 }
 
 function App() {
@@ -29,12 +38,39 @@ function App() {
   const [input, setInput] = useState("");
   const [error, setError] = useState("");
   const [modelName, setModelName] = useState("");
+  const [providerName, setProviderName] = useState("DeepSeek");
+  const [connectionState, setConnectionState] = useState<ConnectionState>("checking");
   const [isLoading, setIsLoading] = useState(false);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const apiBaseUrl = useMemo(getApiBaseUrl, []);
 
-  async function sendMessage(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  async function loadConfig() {
+    setConnectionState("checking");
+    setError("");
+    try {
+      const response = await fetch(`${apiBaseUrl}/config`);
+      const data = (await response.json()) as ConfigResponse;
+      if (!response.ok) {
+        throw new Error("无法读取后端配置。");
+      }
+      setModelName(data.model);
+      setProviderName(data.provider || "DeepSeek");
+      setConnectionState(data.api_key_configured ? "ready" : "missing-key");
+      if (!data.api_key_configured) {
+        setError("后端未读取到 API Key，请检查服务器上的 .env 配置并重启 Docker。");
+      }
+    } catch {
+      setConnectionState("error");
+      setError("3000 页面已打开，但无法通过 /api 连接后端。请检查 Docker 服务状态。");
+    }
+  }
+
+  useEffect(() => {
+    void loadConfig();
+  }, []);
+
+  async function sendMessage(event?: FormEvent<HTMLFormElement>) {
+    event?.preventDefault();
     const content = input.trim();
     if (!content || isLoading) {
       return;
@@ -69,6 +105,7 @@ function App() {
 
       const chatData = data as ChatResponse;
       setModelName(chatData.model);
+      setConnectionState("ready");
       setMessages((current) => [
         ...current,
         {
@@ -86,57 +123,131 @@ function App() {
     }
   }
 
+  function handleKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
+    if (event.key === "Enter" && !event.shiftKey) {
+      event.preventDefault();
+      void sendMessage();
+    }
+  }
+
+  function startNewChat() {
+    setMessages([]);
+    setInput("");
+    setError("");
+    inputRef.current?.focus();
+  }
+
+  const statusText = {
+    checking: "连接中",
+    ready: modelName || "已连接",
+    "missing-key": "密钥未配置",
+    error: "连接异常",
+  }[connectionState];
+
   return (
     <main className="app-shell">
-      <section className="chat-panel" aria-label="AI Agent 聊天演示">
-        <header className="chat-header">
-          <div>
-            <p className="eyebrow">16 小时 AI Agent 产品挑战</p>
-            <h1>中文 AI Agent Demo</h1>
-          </div>
-          <div className="status">
-            <span className="status-dot" />
-            <span>{modelName || "待连接模型"}</span>
-          </div>
-        </header>
-
-        <div className="messages" aria-live="polite">
-          {messages.length === 0 ? (
-            <div className="empty-state">
-              <h2>开始一次产品探索</h2>
-              <p>输入一个需求、业务想法或技术问题，我会把它转成清晰可执行的下一步。</p>
+      <section className="workspace" aria-label="AI Agent 聊天演示">
+        <aside className="side-panel">
+          <div className="brand-lockup">
+            <div className="brand-mark">
+              <Sparkles size={20} />
             </div>
-          ) : (
-            messages.map((message) => (
-              <article className={`message message-${message.role}`} key={message.id}>
-                <span className="message-role">{message.role === "user" ? "你" : "AI"}</span>
-                <p>{message.content}</p>
-              </article>
-            ))
-          )}
-          {isLoading ? (
-            <article className="message message-assistant">
-              <span className="message-role">AI</span>
-              <p className="typing">正在思考...</p>
-            </article>
-          ) : null}
-        </div>
+            <div>
+              <p className="eyebrow">AI Agent Challenge</p>
+              <h1>中文产品助手</h1>
+            </div>
+          </div>
 
-        {error ? <div className="error-banner">{error}</div> : null}
+          <div className={`connection-card connection-${connectionState}`}>
+            <div className="connection-title">
+              <Wifi size={16} />
+              <span>{providerName}</span>
+            </div>
+            <strong>{statusText}</strong>
+            <p>{connectionState === "ready" ? "3000 同源代理已启用" : "正在检查运行状态"}</p>
+          </div>
 
-        <form className="composer" onSubmit={sendMessage}>
-          <textarea
-            ref={inputRef}
-            value={input}
-            onChange={(event) => setInput(event.target.value)}
-            placeholder="例如：帮我把这个 AI Agent 产品想法拆成 3 个可验证功能"
-            rows={3}
-            disabled={isLoading}
-          />
-          <button type="submit" disabled={isLoading || !input.trim()}>
-            {isLoading ? "发送中" : "发送"}
+          <div className="prompt-stack">
+            {starterPrompts.map((prompt) => (
+              <button className="prompt-button" key={prompt} type="button" onClick={() => setInput(prompt)}>
+                {prompt}
+              </button>
+            ))}
+          </div>
+
+          <button className="utility-button" type="button" onClick={startNewChat}>
+            <Plus size={16} />
+            <span>新对话</span>
           </button>
-        </form>
+        </aside>
+
+        <div className="chat-panel">
+          <header className="chat-header">
+            <div>
+              <p className="section-label">Demo Chat</p>
+              <h2>把想法推进到可展示版本</h2>
+            </div>
+            <button className="icon-button" type="button" onClick={loadConfig} aria-label="刷新连接状态">
+              <RefreshCw size={18} />
+            </button>
+          </header>
+
+          <div className="messages" aria-live="polite">
+            {messages.length === 0 ? (
+              <div className="empty-state">
+                <div className="empty-icon">
+                  <Bot size={26} />
+                </div>
+                <h3>先问一个具体问题</h3>
+                <p>例如产品定位、功能切分、演示话术、技术实现路径。</p>
+              </div>
+            ) : (
+              messages.map((message) => (
+                <article className={`message message-${message.role}`} key={message.id}>
+                  <span className="avatar">{message.role === "user" ? <UserRound size={16} /> : <Bot size={16} />}</span>
+                  <div>
+                    <span className="message-role">{message.role === "user" ? "你" : providerName}</span>
+                    <p>{message.content}</p>
+                  </div>
+                </article>
+              ))
+            )}
+            {isLoading ? (
+              <article className="message message-assistant">
+                <span className="avatar">
+                  <Loader2 className="spin" size={16} />
+                </span>
+                <div>
+                  <span className="message-role">{providerName}</span>
+                  <p className="typing">正在生成回复...</p>
+                </div>
+              </article>
+            ) : null}
+          </div>
+
+          {error ? (
+            <div className="error-banner">
+              <AlertTriangle size={17} />
+              <span>{error}</span>
+            </div>
+          ) : null}
+
+          <form className="composer" onSubmit={sendMessage}>
+            <textarea
+              ref={inputRef}
+              value={input}
+              onChange={(event) => setInput(event.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="输入你的问题..."
+              rows={3}
+              disabled={isLoading}
+            />
+            <button className="send-button" type="submit" disabled={isLoading || !input.trim()}>
+              {isLoading ? <Loader2 className="spin" size={18} /> : <Send size={18} />}
+              <span>{isLoading ? "发送中" : "发送"}</span>
+            </button>
+          </form>
+        </div>
       </section>
     </main>
   );
