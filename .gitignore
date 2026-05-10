@@ -42,6 +42,8 @@ venv/
 
 # Local-only bulky research datasets. Commit synthesized findings, not raw desk-research JSON.
 target/research/demand-validation-desk-research/data/*.json
+target/agentic-rag-upgrade/raw/
+target/agentic-rag-upgrade/downloads/
 
 # LaTeX build cache for generated reports
 target/research/final-report/*.aux

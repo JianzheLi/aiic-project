@@ -20,15 +20,15 @@ AI 模拟面试官把首版闭环收敛为三步：
 
 ## 4. 为什么不是普通聊天机器人
 
-普通聊天机器人默认顺着用户提问回答，很容易变成知识讲解或泛泛建议。本产品用轻量状态机控制面试阶段、轮次和结束条件，用场景化 prompt pack 约束模型角色：先做面试官提问，再做追问者深挖，最后做教练复盘。这样用户获得的是一轮训练闭环，而不是一次聊天。
+普通聊天机器人默认顺着用户提问回答，很容易变成知识讲解或泛泛建议。本产品用 Agentic RAG 工作流控制面试阶段、资料检索、追问生成和 critic 自检：每轮先从资料卡中检索技术依据，再结合简历证据生成追问，如果问题太泛泛或没有技术依据就重写一次。这样用户获得的是一轮训练闭环，而不是一次聊天。
 
 ## 5. MVP 取舍
 
-我们没有做登录、数据库、语音、视频、OCR 扫描件识别或复杂 agent 框架。原因是 16 小时挑战的关键不是堆功能，而是做出最小但有训练价值的闭环：上传简历、被追问、暴露挂点、知道下一步怎么补。
+我们没有做登录、数据库、语音、视频或复杂 agent 框架。原因是 16 小时挑战的关键不是堆功能，而是做出最小但有训练价值的闭环：上传简历、被追问、暴露挂点、知道下一步怎么补。扫描 PDF 只做本地 OCR 兜底，不追求完整文档智能解析。
 
 ## 6. 技术实现
 
-当前实现沿用 FastAPI + Vite/React + Docker Compose。后端新增 `/resume/extract` 和 `/interview/message`，支持 PDF/DOCX/TXT 简历解析，并使用 OpenAI-compatible Chat Completions 接入 `deepseek-v4-pro`；前端改造为面试训练工作台，通过 `/api/*` 同源代理访问后端。测试覆盖后端简历解析、状态推进和前端核心交互，公网 demo 以 `http://8.139.254.60:3000/` 为验收入口。
+当前实现沿用 FastAPI + Vite/React + Docker Compose。后端新增 `/resume/extract` 和 `/interview/message`，支持 PDF/DOCX/TXT 简历解析和扫描 PDF 本地 OCR，并使用 OpenAI-compatible Chat Completions 接入 `deepseek-v4-pro`。面试主接口会返回 `source_cards`、`question_tags`、`resume_evidence` 和 `risk_hypothesis`，前端展示“本轮追问依据”。测试覆盖后端简历解析、Agentic RAG 检索/critic、状态推进和前端核心交互，公网 demo 以 `http://8.139.254.60:3000/` 为验收入口。
 
 ## 7. Demo 亮点
 
@@ -36,4 +36,4 @@ AI 模拟面试官把首版闭环收敛为三步：
 
 ## 8. 后续方向
 
-后续可以加入 OCR 扫描简历、JD 匹配、历史训练记录、语音模拟和更严格的结构化评分。等需要 tools/session/tracing 时再考虑 OpenAI Agents SDK；等需要长期状态和 human-in-the-loop 时再考虑 LangGraph。
+后续可以加入 JD 匹配、历史训练记录、语音模拟、向量化资料库和更严格的结构化评分。等需要 tools/session/tracing 时再考虑 OpenAI Agents SDK；等需要长期状态和 human-in-the-loop 时再考虑 LangGraph。

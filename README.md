@@ -11,16 +11,19 @@ http://8.139.254.60:3000/
 ## 核心功能
 
 - 3 个训练场景：项目深挖压力面、后端八股项目化追问、RAG/Agent 项目真实性拷打。
-- 简历驱动：支持上传 PDF/DOCX/TXT，扫描 PDF 暂不做 OCR，可粘贴文本兜底。
+- 简历驱动：支持上传 PDF/DOCX/TXT，文本型 PDF 直接解析，扫描 PDF 尝试 OCR，可粘贴文本兜底。
+- 本地 OCR：文本型 PDF 直接抽取，扫描 PDF 会尝试 Tesseract OCR 兜底。
+- Agentic RAG：每轮从资料卡检索技术依据，生成后用 critic 规则检查泛泛追问并重写。
 - 场景独立会话：同一份简历可以在不同训练场景中分别练习，切换场景不丢对话。
 - 连续追问：后端用轻量状态机控制 `opening -> followup -> completed`。
 - 结构化复盘：总评、最可能被问挂的 3 个点、维度反馈、下一轮行动、下一轮练习题。
+- 追问依据展示：前端展示简历证据、风险假设、问题标签和资料来源。
 - 默认模型：DeepSeek `deepseek-v4-pro`，对该模型启用 thinking 和 high reasoning effort。
 - 部署简单：FastAPI + Vite/React + Docker Compose，浏览器只访问 `3000`，前端通过 `/api/*` 同源代理后端。
 
 ## 技术栈
 
-- 后端：FastAPI、OpenAI Python SDK、python-multipart、pypdf、python-docx。
+- 后端：FastAPI、OpenAI Python SDK、python-multipart、pypdf、PyMuPDF、python-docx、Tesseract OCR。
 - 前端：Vite、React、TypeScript、react-markdown、lucide-react。
 - 测试：pytest、Playwright。
 - 部署：Docker Compose，前端 `3000`，后端 `8000`。
@@ -61,7 +64,21 @@ http://8.139.254.60:3000/
   "round": 1,
   "max_rounds": 5,
   "is_complete": false,
-  "model": "deepseek-v4-pro"
+  "model": "deepseek-v4-pro",
+  "source_cards": [
+    {
+      "id": "rag-milvus-009",
+      "title": "Milvus hybrid search reranking",
+      "url": "https://milvus.io/docs/reranking.md",
+      "source_type": "official-doc",
+      "tags": ["rag", "retrieval", "rerank", "evaluation"],
+      "matched_terms": ["Milvus", "rerank"],
+      "score": 18.5
+    }
+  ],
+  "question_tags": ["rag", "retrieval", "rerank"],
+  "resume_evidence": "项目：智能课程问答系统，负责 PDF 解析、chunk 策略、检索链路。",
+  "risk_hypothesis": "候选人可能只描述了 RAG 流程，但缺少 chunk/rerank 参数选择、坏例归因和评估指标。"
 }
 ```
 
@@ -185,5 +202,6 @@ curl -X POST http://8.139.254.60:3000/api/interview/message \
 - 调研报告：`target/research/final-report/ai-interviewer-research-report.md`
 - 调研 PDF：`target/research/final-report/ai-interviewer-research-report.pdf`
 - 架构设计：`target/agent-architecture-design/design-proposal.md`
+- Agentic RAG 升级：`target/agentic-rag-upgrade/`
 - Product Memo 草稿：`target/product-delivery/product-memo.md`
 - Demo 视频脚本：`target/product-delivery/demo-video-script.md`

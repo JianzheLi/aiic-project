@@ -69,7 +69,7 @@
 
 ### 待定产品取舍
 
-- [x] 首版输入升级为上传 PDF/DOCX/TXT 简历或粘贴简历文本，岗位 JD 可选；扫描 PDF/OCR 暂不做。
+- [x] 输入升级为上传 PDF/DOCX/TXT 简历或粘贴简历文本，岗位 JD 可选；文本型 PDF 直接解析，扫描 PDF 尝试本地 OCR。
 - [x] 反馈维度确定为：项目可信度、专业深度、表达结构、工程闭环、承压表现、下一步行动。
 - [x] 产品第一屏改成“面试训练工作台”，不是普通聊天页。
 - [x] Demo 视频前 30 秒的 wow moment：用户上传简历后，AI 抓住简历里的具体技术栈和项目风险点连续追问，并指出最可能被问挂的点。
@@ -78,6 +78,7 @@
 - [x] 首版架构确定为“轻量状态机 workflow + 场景化 prompt pack + 结构化复盘”，不引入 LangGraph、AutoGen、CrewAI 或 OpenAI Agents SDK 作为运行时依赖。
 - [x] 训练场景切换改为“每个场景独立对话”，同一份简历可以分别练项目深挖、后端八股和 RAG/Agent。
 - [x] 默认模型升级为 `deepseek-v4-pro`，并对该模型启用 thinking 和 high reasoning effort。
+- [x] 架构升级为 Agentic RAG：每轮基于资料卡检索技术依据，生成追问后用 critic 规则拦截泛泛问题，前端展示简历证据、风险假设、问题标签和来源。
 
 ### MVP 方向草案
 
@@ -85,7 +86,7 @@
 - 面试流程：上传/粘贴简历、选择场景、开始面试、连续追问、结束并总结。
 - 反馈输出：总评、亮点、风险点、项目可信度、表达结构、工程闭环、承压表现、可执行改进建议、下一轮练习题。
 - 交互体验：让用户明显感到这是“面试训练产品”，不是普通聊天框。
-- 后端提示词：区分面试官、追问者和教练反馈三类行为，但先保持单接口实现。
+- 后端工作流：单接口内显式编排“简历画像/资料检索/问题生成/critic 重写/结构化复盘”，暂不引入重型 agent 框架。
 - 部署：继续使用 Docker Compose，保持 `3000` 公网访问和 `/api/*` 同源代理。
 
 ## 阶段三：实施与交付
@@ -98,7 +99,8 @@
 - [x] 完成实现设计：新增 `/interview/message`，保留 `/chat`、`/config`、`/health`，详见 `target/agent-architecture-design/implementation-design.md`。
 - [x] 改造前端，从通用聊天 demo 变成模拟面试训练界面。
 - [x] 改造后端系统提示词和返回逻辑，支持面试追问与结构化反馈。
-- [x] 新增 `/resume/extract`，支持 PDF/DOCX/TXT 简历解析；扫描 PDF 给出清晰错误。
+- [x] 新增 `/resume/extract`，支持 PDF/DOCX/TXT 简历解析；扫描 PDF 尝试本地 OCR，失败时给出清晰错误。
+- [x] 新增 Agentic RAG 资料卡检索模块和前端追问依据展示。
 - [x] 补充 README 的产品定位、运行方式、技术栈和提交说明。
 - [x] 本地或服务器验证 `/health`、`/api/config`、`/api/chat`。
 - [x] Docker Compose 重新构建并部署到公网 demo。
@@ -116,7 +118,7 @@
 - 产品设计说明：强调窄场景、简历驱动、连续追问、结构化挂点复盘；完整设计见 `target/agent-architecture-design/design-proposal.md`。
 - 版本迭代记录：从通用聊天样本到模拟面试官；后续每次关键变更继续记录。
 - 交付材料草稿：`target/product-delivery/`。
-- 下一步设计：首版之后可选方向包括 OCR 扫描简历、JD 匹配、语音练习、历史记录、个性化题库；需要 tools/session/tracing 时再考虑 OpenAI Agents SDK，需要长期状态和 human-in-the-loop 时再考虑 LangGraph。
+- 下一步设计：首版之后可选方向包括 JD 匹配、语音练习、历史记录、个性化题库、向量化资料库；需要 tools/session/tracing 时再考虑 OpenAI Agents SDK，需要长期状态和 human-in-the-loop 时再考虑 LangGraph。
 - AI 工具使用：Codex 用于代码理解、计划维护、实现和调试；LLM API 用于面试官能力。
 
 ## 决策记录
@@ -132,3 +134,4 @@
 - 2026-05-10：完成 Agent 架构与产品设计调研；调研 OpenAI Agents SDK、Responses API、LangGraph、AutoGen、CrewAI、OASIS 等资料后，决定首版采用轻量状态机 workflow，不引入重型 agent 框架。
 - 2026-05-10：完成首版完整产品实现：后端 `/interview/message` workflow、前端面试训练工作台、Product Memo 草稿、Demo 视频脚本和自动化测试。
 - 2026-05-10：完成简历上传升级：新增 `/resume/extract`，支持 PDF/DOCX/TXT；前端改为上传/粘贴简历主流程；场景切换改为独立对话；默认模型切到 `deepseek-v4-pro`。
+- 2026-05-10：取消扫描 PDF 限制并升级架构：后端加入本地 OCR 兜底、资料卡检索、Agentic RAG 追问生成和 critic 重写；前端展示本轮追问依据。
