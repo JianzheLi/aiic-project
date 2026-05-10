@@ -1,0 +1,151 @@
+[
+  {
+    "id": "backend_database",
+    "title": "后端 / 数据库",
+    "description": "互联网后端实习最常见的数据库、缓存、并发和稳定性八股。",
+    "topics": [
+      {
+        "id": "mysql-index-transaction",
+        "title": "MySQL 索引与事务隔离",
+        "prompt": "围绕 B+Tree 索引、最左前缀、覆盖索引、事务隔离级别、MVCC 和间隙锁提问。",
+        "tags": ["mysql", "index", "transaction", "mvcc", "lock"],
+        "key_points": ["B+Tree 和哈希索引的适用差异", "可重复读下 MVCC 与锁的边界", "慢查询定位和 explain 基本字段"],
+        "common_mistakes": ["只背隔离级别名称", "把 MVCC 和锁混为一谈", "说不清索引失效场景"],
+        "references": [
+          {"title": "MySQL 8.4 Reference Manual: InnoDB Transaction Isolation Levels", "url": "https://dev.mysql.com/doc/refman/8.4/en/innodb-transaction-isolation-levels.html", "source_type": "official-doc"}
+        ]
+      },
+      {
+        "id": "redis-cache-consistency",
+        "title": "Redis 缓存一致性与击穿雪崩",
+        "prompt": "围绕 cache aside、过期策略、击穿/穿透/雪崩、分布式锁和热点 key 处理提问。",
+        "tags": ["redis", "cache", "consistency", "hot-key"],
+        "key_points": ["先更新 DB 再删缓存的常见取舍", "布隆过滤器和空值缓存的适用场景", "热点 key 限流、互斥重建和预热"],
+        "common_mistakes": ["承诺强一致但没有代价说明", "把分布式锁当成万能方案", "忽略失败重试和监控"],
+        "references": [
+          {"title": "Redis Docs: Caching", "url": "https://redis.io/docs/latest/develop/use/patterns/client-side-caching/", "source_type": "official-doc"}
+        ]
+      },
+      {
+        "id": "mq-idempotency",
+        "title": "消息队列幂等与可靠性",
+        "prompt": "围绕 at-least-once、重复消费、顺序消息、死信队列、事务消息和削峰填谷提问。",
+        "tags": ["mq", "kafka", "rabbitmq", "idempotency", "reliability"],
+        "key_points": ["幂等 key 与状态机", "重试、死信和人工补偿", "顺序性与吞吐的取舍"],
+        "common_mistakes": ["只说 MQ 解耦削峰", "忽略重复投递", "没有失败补偿路径"],
+        "references": [
+          {"title": "Kafka Documentation: Message Delivery Semantics", "url": "https://kafka.apache.org/documentation/#semantics", "source_type": "official-doc"}
+        ]
+      }
+    ]
+  },
+  {
+    "id": "search_ads_rec",
+    "title": "搜广推",
+    "description": "搜索、广告、推荐岗位常见的召回、排序、评估和在线实验问题。",
+    "topics": [
+      {
+        "id": "recall-rank-rerank",
+        "title": "召回、粗排、精排、重排链路",
+        "prompt": "围绕多路召回、粗排/精排目标、重排约束、多样性和延迟预算提问。",
+        "tags": ["retrieval", "ranking", "rerank", "latency"],
+        "key_points": ["每层目标不同", "离线指标和在线指标可能不一致", "重排要考虑多样性、规则和业务约束"],
+        "common_mistakes": ["把召回和排序指标混用", "只说模型越大越好", "忽略延迟和候选规模"],
+        "references": [
+          {"title": "Google Developers: Recommendation systems overview", "url": "https://developers.google.com/machine-learning/recommendation/overview", "source_type": "technical-doc"}
+        ]
+      },
+      {
+        "id": "ctr-cvr-calibration",
+        "title": "CTR/CVR 预估与校准",
+        "prompt": "围绕特征、样本偏差、负采样、校准、AUC/LogLoss 和线上 A/B 实验提问。",
+        "tags": ["ctr", "cvr", "calibration", "ab-test"],
+        "key_points": ["AUC 看排序，LogLoss 看概率质量", "校准影响竞价和阈值决策", "样本选择偏差会污染训练"],
+        "common_mistakes": ["只会背 AUC", "忽略曝光位置偏差", "无法解释校准曲线"],
+        "references": [
+          {"title": "Google Developers: Classification metrics", "url": "https://developers.google.com/machine-learning/crash-course/classification/accuracy-precision-recall", "source_type": "technical-doc"}
+        ]
+      }
+    ]
+  },
+  {
+    "id": "agent_llm",
+    "title": "Agent / LLM",
+    "description": "Agent、RAG、大模型应用和推理岗位的纯知识点训练。",
+    "topics": [
+      {
+        "id": "rag-retrieval-evaluation",
+        "title": "RAG 检索与评估",
+        "prompt": "围绕 chunk、embedding、BM25/向量混合检索、rerank、召回评估和幻觉控制提问。",
+        "tags": ["rag", "chunking", "embedding", "rerank", "evaluation"],
+        "key_points": ["检索质量和生成质量要分层定位", "bad case 要能落到 chunk、召回、rerank 或 prompt", "评估要区分 recall、faithfulness 和 answer correctness"],
+        "common_mistakes": ["只说向量库加大模型", "无法说明坏例归因", "把幻觉完全归因给模型"],
+        "references": [
+          {"title": "LangChain RAG Conceptual Guide", "url": "https://python.langchain.com/docs/concepts/rag/", "source_type": "framework-doc"}
+        ]
+      },
+      {
+        "id": "agent-tool-planning",
+        "title": "Agent 工具调用与规划",
+        "prompt": "围绕 ReAct、工具 schema、状态管理、失败重试、权限边界和多步任务可观测性提问。",
+        "tags": ["agent", "tool-use", "planning", "state", "observability"],
+        "key_points": ["工具调用要有输入输出约束", "失败路径比 happy path 更能体现工程能力", "长任务需要状态、trace 和中断恢复"],
+        "common_mistakes": ["把 Agent 等同于 prompt", "忽略工具权限和注入风险", "没有 trace 和回放能力"],
+        "references": [
+          {"title": "OpenAI Agents SDK Documentation", "url": "https://openai.github.io/openai-agents-python/", "source_type": "framework-doc"}
+        ]
+      },
+      {
+        "id": "llm-inference-basics",
+        "title": "LLM 推理与采样",
+        "prompt": "围绕 prefill/decode、KV cache、temperature/top-p/top-k、batching、量化和延迟吞吐提问。",
+        "tags": ["llm", "inference", "kv-cache", "sampling", "quantization"],
+        "key_points": ["prefill 和 decode 的瓶颈不同", "采样参数影响随机性和质量", "KV cache 是长上下文推理的重要成本"],
+        "common_mistakes": ["只知道 temperature 越高越随机", "说不清 top-k 和 top-p 差异", "忽略首 token 延迟和吞吐区别"],
+        "references": [
+          {"title": "vLLM Documentation", "url": "https://docs.vllm.ai/", "source_type": "framework-doc"}
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ai_algorithm",
+    "title": "AI 算法",
+    "description": "机器学习、深度学习、生成模型和表示学习基础。",
+    "topics": [
+      {
+        "id": "transformer-attention",
+        "title": "Transformer 与 Attention",
+        "prompt": "围绕 scaled dot-product attention、MHA、位置编码、残差、LayerNorm 和复杂度提问。",
+        "tags": ["transformer", "attention", "mha", "layernorm"],
+        "key_points": ["Q/K/V 维度和 attention score 含义", "除以 sqrt(dk) 的稳定性原因", "MHA 是多子空间表达不是简单重复"],
+        "common_mistakes": ["只背公式不懂 shape", "不知道 mask 的作用", "说不清 pre-norm/post-norm"],
+        "references": [
+          {"title": "Attention Is All You Need", "url": "https://arxiv.org/abs/1706.03762", "source_type": "paper"}
+        ]
+      },
+      {
+        "id": "vae-diffusion",
+        "title": "VAE 与 Diffusion",
+        "prompt": "围绕 ELBO、重参数化、KL 散度、扩散前向加噪、反向去噪和噪声预测目标提问。",
+        "tags": ["vae", "diffusion", "elbo", "kl", "generative-model"],
+        "key_points": ["VAE 用重参数化让采样可反传", "KL 项约束潜变量分布", "Diffusion 的训练目标通常是预测噪声或变体"],
+        "common_mistakes": ["把 VAE 和 AE 混为一谈", "不会解释 KL 的作用", "只说 Diffusion 逐步去噪但不懂训练信号"],
+        "references": [
+          {"title": "Denoising Diffusion Probabilistic Models", "url": "https://arxiv.org/abs/2006.11239", "source_type": "paper"}
+        ]
+      },
+      {
+        "id": "loss-optimization",
+        "title": "损失函数与优化",
+        "prompt": "围绕交叉熵、MSE、KL、对比学习、过拟合、正则化、学习率和梯度问题提问。",
+        "tags": ["loss", "optimization", "kl", "contrastive-learning"],
+        "key_points": ["分类常用交叉熵而非 MSE 的原因", "KL 是分布差异不是距离", "优化问题要结合数据、模型和训练曲线判断"],
+        "common_mistakes": ["只会写公式", "不知道 loss 和评估指标的区别", "无法解释训练发散或过拟合"],
+        "references": [
+          {"title": "Deep Learning Book: Optimization", "url": "https://www.deeplearningbook.org/contents/optimization.html", "source_type": "book"}
+        ]
+      }
+    ]
+  }
+]

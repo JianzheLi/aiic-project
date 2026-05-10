@@ -1,6 +1,6 @@
 # AI 模拟面试官
 
-面向中国本科生技术实习面试准备的 AI 模拟面试产品。用户上传 PDF/DOCX/TXT 简历或粘贴简历文本后，AI 会围绕简历里的项目、技能和岗位目标连续追问，并在结束后输出结构化复盘，指出最可能被问挂的点和下一轮行动。
+面向中国本科生技术实习面试准备的 AI 模拟面试产品。产品现在提供八股知识点、简历经历追问和手撕代码三个训练入口：八股不需要简历，简历模式支持 PDF/DOCX/TXT 上传，手撕代码覆盖 LeetCode 高频算法和常见 AI 算子实现。每个入口都会连续追问，并在结束后输出结构化复盘。
 
 当前公网 demo：
 
@@ -10,11 +10,13 @@ http://8.139.254.60:3000/
 
 ## 核心功能
 
-- 3 个训练场景：项目深挖压力面、后端八股项目化追问、RAG/Agent 项目真实性拷打。
+- 3 个训练入口：首页选择八股知识点、简历经历、手撕代码，进入相互独立的训练界面。
+- 八股分类：后端/数据库、搜广推、Agent/LLM、AI 算法，覆盖纯知识点追问和回答漏洞反馈。
+- 手撕代码：内置 LeetCode 高频题和 AI 算子题，支持粘贴思路/代码后做静态评审。
 - 简历驱动：支持上传 PDF/DOCX/TXT，文字型 PDF 优先用 PyMuPDF + pypdf 提取文本层，扫描 PDF 才尝试 OCR，可粘贴文本兜底。
 - 本地 OCR：文本型 PDF 直接抽取，扫描 PDF 会尝试 Tesseract OCR 兜底。
 - Agentic RAG：每轮从资料卡检索技术依据，生成后用 critic 规则检查泛泛追问并重写。
-- 场景独立会话：同一份简历可以在不同训练场景中分别练习，切换场景不丢对话。
+- 独立会话：八股分类、简历场景和手撕题类之间相互隔离，切换训练入口不串上下文。
 - 连续追问：后端用轻量状态机控制 `opening -> followup -> completed`。
 - 结构化复盘：总评、最可能被问挂的 3 个点、维度反馈、下一轮行动、下一轮练习题。
 - 追问依据展示：前端展示简历证据、风险假设、问题标签和资料来源。
@@ -36,30 +38,31 @@ http://8.139.254.60:3000/
 | `GET /config` | 返回 provider/model/key 配置状态，不泄露 key |
 | `POST /resume/extract` | 上传并解析 PDF/DOCX/TXT 简历 |
 | `POST /chat` | 保留的兼容聊天接口 |
-| `POST /interview/message` | 面试训练主接口 |
+| `POST /training/message` | 三入口训练主接口 |
+| `POST /interview/message` | 保留的简历追问兼容接口 |
 
 `POST /resume/extract` 使用 `multipart/form-data`，字段名为 `file`。
 
-`POST /interview/message` 请求示例：
+`POST /training/message` 请求示例：
 
 ```json
 {
-  "scenario": "rag_agent_review",
+  "mode": "knowledge",
+  "category": "agent_llm",
   "phase": "opening",
   "round": 0,
   "max_rounds": 5,
-  "resume_text": "候选人简历：我做了一个基于 RAG 的课程问答系统...",
-  "resume_filename": "resume.pdf",
-  "job_target": "AI 应用开发实习",
   "messages": []
 }
 ```
+
+简历模式把 `mode` 设为 `resume`，`category` 使用 `project_deep_dive`、`backend_fundamentals` 或 `rag_agent_review`，并传入 `resume_text`、`resume_filename` 和 `job_target`。手撕代码模式把 `mode` 设为 `coding`，`category` 使用 `leetcode_core` 或 `ai_ops`，提交答案时传入 `code_answer`。
 
 响应示例：
 
 ```json
 {
-  "reply": "简历里你写了 PDF 解析和 chunk 策略。请说明 chunk 大小、重叠长度和评估依据是怎么定的？",
+  "reply": "请解释 RAG 中 chunk、embedding 召回和 rerank 分别解决什么问题，并说明一个常见坏例如何归因。",
   "phase": "followup",
   "round": 1,
   "max_rounds": 5,
@@ -77,8 +80,19 @@ http://8.139.254.60:3000/
     }
   ],
   "question_tags": ["rag", "retrieval", "rerank"],
-  "resume_evidence": "项目：智能课程问答系统，负责 PDF 解析、chunk 策略、检索链路。",
-  "risk_hypothesis": "候选人可能只描述了 RAG 流程，但缺少 chunk/rerank 参数选择、坏例归因和评估指标。"
+  "resume_evidence": "当前训练项：RAG 检索与评估",
+  "risk_hypothesis": "常见挂点：无法说明坏例归因",
+  "item": {
+    "id": "rag-retrieval-evaluation",
+    "title": "RAG 检索与评估",
+    "category": "agent_llm",
+    "description": "Agent、RAG、大模型应用和推理岗位的纯知识点训练。",
+    "prompt": "围绕 chunk、embedding、BM25/向量混合检索、rerank、召回评估和幻觉控制提问。",
+    "difficulty": "",
+    "tags": ["rag", "chunking", "embedding", "rerank", "evaluation"],
+    "starter_code": "",
+    "source_url": "https://python.langchain.com/docs/concepts/rag/"
+  }
 }
 ```
 
@@ -191,9 +205,9 @@ http://8.139.254.60:3000/
 ```bash
 curl http://8.139.254.60:3000/api/config
 curl http://8.139.254.60:3000/api/health
-curl -X POST http://8.139.254.60:3000/api/interview/message \
+curl -X POST http://8.139.254.60:3000/api/training/message \
   -H "Content-Type: application/json" \
-  -d '{"scenario":"rag_agent_review","phase":"opening","round":0,"max_rounds":5,"resume_text":"候选人简历：我做了一个基于 FastAPI、Milvus 和 RAG 的课程问答系统，负责 PDF 解析、chunk 策略、检索链路和部署。","resume_filename":"resume.txt","job_target":"AI 应用开发实习","messages":[]}'
+  -d '{"mode":"coding","category":"ai_ops","phase":"opening","round":0,"max_rounds":5,"messages":[],"language":"Python"}'
 ```
 
 浏览器验收只依赖 `3000`。如果云服务器安全组单独放行了 `8000`，也可以直接检查 `http://8.139.254.60:8000/health`。

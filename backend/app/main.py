@@ -2,7 +2,7 @@ import os
 from dataclasses import dataclass
 from io import BytesIO
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 from urllib.parse import urlparse
 
 from docx import Document
@@ -19,6 +19,13 @@ from .agentic_rag import (
     critique_interview_reply,
     format_source_context,
 )
+from .training_bank import (
+    get_category,
+    get_item,
+    list_category_ids,
+    load_coding_categories,
+    load_knowledge_categories,
+)
 
 
 DEFAULT_BASE_URL = "https://api.deepseek.com"
@@ -30,6 +37,7 @@ MIN_RESUME_TEXT_CHARS = 30
 
 Scenario = Literal["project_deep_dive", "backend_fundamentals", "rag_agent_review"]
 InterviewPhase = Literal["opening", "followup", "summary", "completed"]
+TrainingMode = Literal["knowledge", "resume", "coding"]
 
 
 class ChatMessage(BaseModel):
@@ -98,6 +106,40 @@ class InterviewResponse(BaseModel):
     question_tags: list[str] = Field(default_factory=list)
     resume_evidence: str = ""
     risk_hypothesis: str = ""
+    feedback: str = ""
+
+
+class TrainingItemResponse(BaseModel):
+    id: str
+    title: str
+    category: str
+    description: str = ""
+    prompt: str = ""
+    difficulty: str = ""
+    tags: list[str] = Field(default_factory=list)
+    starter_code: str = ""
+    source_url: str = ""
+
+
+class TrainingRequest(BaseModel):
+    mode: TrainingMode
+    category: str = Field(default="", max_length=80)
+    phase: InterviewPhase = "opening"
+    round: int = Field(default=0, ge=0, le=8)
+    max_rounds: int = Field(default=5, ge=1, le=8)
+    messages: list[ChatMessage] = Field(default_factory=list, max_length=40)
+    resume_text: str = Field(default="", max_length=MAX_RESUME_CHARS)
+    resume_filename: str = Field(default="", max_length=255)
+    project_context: str = Field(default="", max_length=16000)
+    job_target: str = Field(default="", max_length=1000)
+    topic_id: str = Field(default="", max_length=120)
+    problem_id: str = Field(default="", max_length=120)
+    language: str = Field(default="Python", max_length=80)
+    code_answer: str = Field(default="", max_length=20000)
+
+
+class TrainingResponse(InterviewResponse):
+    item: TrainingItemResponse | None = None
 
 
 @dataclass(frozen=True)
@@ -164,6 +206,70 @@ SUMMARY_INSTRUCTION = """
 
 维度反馈至少覆盖：项目可信度、专业深度、表达结构、工程闭环、承压表现。
 证据必须来自用户简历或本轮回答；不要写泛泛建议。
+""".strip()
+
+
+KNOWLEDGE_RULES = """
+你是中文技术实习面试里的八股知识点训练官。
+规则：
+1. 这是纯知识点训练，不依赖简历；不要要求候选人结合项目经历。
+2. 每轮只围绕当前分类和知识点问一个主问题，最多补充一个边界追问。
+3. 追问要能暴露理解深度：机制、公式、边界、复杂度、失败场景、指标差异或常见误区。
+4. 候选人回答后，先指出回答中不准确、缺失或表达不清的地方，再继续追问。
+5. 不要泛泛讲课，不要一次列十几个问题，不要替候选人完整作答。
+6. 输出中文，像真实技术面试官，但问题必须是本科实习候选人可回答的。
+""".strip()
+
+
+KNOWLEDGE_SUMMARY_INSTRUCTION = """
+请结束本轮八股训练，基于全部问答生成 Markdown 复盘，结构固定为：
+
+## 总评
+
+## 知识漏洞
+
+## 回答问题
+
+| 维度 | 判断 | 证据 | 改进 |
+| --- | --- | --- | --- |
+
+## 下一轮复习清单
+
+维度至少覆盖：概念准确性、机制链路、边界条件、表达结构、常见误区。
+证据必须来自本轮回答；不要写空泛鼓励。
+""".strip()
+
+
+CODING_RULES = """
+你是中文技术实习面试里的手撕代码训练官。
+规则：
+1. 不运行用户代码，不声称测试已通过；只能做静态评审和面试反馈。
+2. 重点评审思路正确性、复杂度、边界样例、代码结构、变量含义和表达方式。
+3. 对 LeetCode 类题，要求候选人说清楚思路、复杂度和边界，再看代码。
+4. 对 AI 算子题，必须关注 tensor shape、数值稳定性、mask/广播、复杂度和 PyTorch API 使用。
+5. 用户提交答案后，先给具体反馈，再给一个最值得继续追问的问题。
+6. 不要直接贴完整标准答案，除非在最终复盘里给改进方向。
+""".strip()
+
+
+CODING_SUMMARY_INSTRUCTION = """
+请结束本轮手撕代码训练，基于题目和用户答案生成 Markdown 复盘，结构固定为：
+
+## 总评
+
+## 代码主要问题
+
+## 维度反馈
+
+| 维度 | 判断 | 证据 | 改进 |
+| --- | --- | --- | --- |
+
+## 边界样例
+
+## 下一轮练习
+
+维度至少覆盖：算法思路、复杂度、边界条件、代码可读性、面试表达。
+如果是 AI 算子题，还要覆盖 tensor shape 和数值稳定性。
 """.strip()
 
 
@@ -371,6 +477,265 @@ def build_rewrite_messages(
 
 def next_interview_state(payload: InterviewRequest) -> tuple[InterviewPhase, int, bool]:
     if should_generate_summary(payload):
+        return "completed", min(payload.round, payload.max_rounds), True
+    if payload.phase == "opening":
+        return "followup", 1, False
+    return "followup", min(payload.round + 1, payload.max_rounds), False
+
+
+def _as_text_list(value: object) -> list[str]:
+    if not isinstance(value, list):
+        return []
+    return [str(item).strip() for item in value if str(item).strip()]
+
+
+def _as_reference_list(value: object) -> list[dict[str, str]]:
+    if not isinstance(value, list):
+        return []
+    references: list[dict[str, str]] = []
+    for item in value:
+        if not isinstance(item, dict):
+            continue
+        title = str(item.get("title", "")).strip()
+        url = str(item.get("url", "")).strip()
+        if title and url:
+            references.append(
+                {
+                    "title": title,
+                    "url": url,
+                    "source_type": str(item.get("source_type", "reference")).strip() or "reference",
+                }
+            )
+    return references
+
+
+def build_item_response(category: dict[str, Any], item: dict[str, Any], *, is_problem: bool) -> TrainingItemResponse:
+    source_url = str(item.get("source_url", "")).strip()
+    references = _as_reference_list(item.get("references"))
+    if not source_url and references:
+        source_url = references[0]["url"]
+    return TrainingItemResponse(
+        id=str(item.get("id", "")),
+        title=str(item.get("title", "")),
+        category=str(category.get("id", "")),
+        description=str(category.get("description", "")),
+        prompt=str(item.get("prompt", "")),
+        difficulty=str(item.get("difficulty", "")) if is_problem else "",
+        tags=_as_text_list(item.get("tags")),
+        starter_code=str(item.get("starter_code", "")) if is_problem else "",
+        source_url=source_url,
+    )
+
+
+def build_item_source_cards(category: dict[str, Any], item: dict[str, Any], *, is_problem: bool) -> list[InterviewSourceCard]:
+    tags = _as_text_list(item.get("tags"))
+    references = _as_reference_list(item.get("references"))
+    source_url = str(item.get("source_url", "")).strip()
+    if source_url:
+        references = [
+            {
+                "title": f"{item.get('title', '题目')} 来源",
+                "url": source_url,
+                "source_type": "problem-source" if is_problem else "reference",
+            },
+            *references,
+        ]
+    if not references:
+        references = [
+            {
+                "title": str(category.get("title", "训练资料")),
+                "url": "https://github.com/JianzheLi/aiic-project",
+                "source_type": "local-bank",
+            }
+        ]
+    return [
+        InterviewSourceCard(
+            id=f"{item.get('id', 'training-item')}-{index}",
+            title=reference["title"],
+            url=reference["url"],
+            source_type=reference["source_type"],
+            tags=tags,
+            matched_terms=[str(category.get("title", "")), str(item.get("title", ""))],
+            score=10.0 - index,
+        )
+        for index, reference in enumerate(references[:3], start=1)
+    ]
+
+
+def build_reference_text(item: dict[str, Any]) -> str:
+    blocks = []
+    key_points = _as_text_list(item.get("key_points"))
+    common_mistakes = _as_text_list(item.get("common_mistakes"))
+    evaluation_points = _as_text_list(item.get("evaluation_points"))
+    if key_points:
+        blocks.append("关键点：" + "；".join(key_points))
+    if evaluation_points:
+        blocks.append("评审点：" + "；".join(evaluation_points))
+    if common_mistakes:
+        blocks.append("常见误区：" + "；".join(common_mistakes))
+    return "\n".join(blocks) if blocks else "使用当前题库条目作为训练依据。"
+
+
+def get_training_category_and_item(payload: TrainingRequest) -> tuple[dict[str, Any], dict[str, Any], bool]:
+    if payload.mode == "knowledge":
+        categories = load_knowledge_categories()
+        category = get_category(categories, payload.category)
+        if not category:
+            raise HTTPException(
+                status_code=422,
+                detail=f"未知八股分类：{payload.category}。可选分类：{', '.join(list_category_ids(categories))}",
+            )
+        return category, get_item(category, "topics", payload.topic_id or None), False
+
+    if payload.mode == "coding":
+        categories = load_coding_categories()
+        category = get_category(categories, payload.category)
+        if not category:
+            raise HTTPException(
+                status_code=422,
+                detail=f"未知手撕代码分类：{payload.category}。可选分类：{', '.join(list_category_ids(categories))}",
+            )
+        return category, get_item(category, "problems", payload.problem_id or None), True
+
+    raise HTTPException(status_code=422, detail="简历训练请使用 resume 模式。")
+
+
+def build_knowledge_messages(payload: TrainingRequest, category: dict[str, Any], topic: dict[str, Any]) -> list[dict[str, str]]:
+    system_prompt = f"""
+{KNOWLEDGE_RULES}
+
+当前分类：{category["title"]}
+分类说明：{category.get("description", "")}
+当前知识点：{topic["title"]}
+题目说明：{topic.get("prompt", "")}
+训练依据：
+{build_reference_text(topic)}
+""".strip()
+
+    if should_generate_summary(payload):  # type: ignore[arg-type]
+        stage_instruction = KNOWLEDGE_SUMMARY_INSTRUCTION
+    elif payload.phase == "opening":
+        stage_instruction = """
+现在开始八股知识点训练。
+请围绕当前知识点提出第一道问题。问题要具体，要求候选人解释机制、边界或常见误区之一。
+只输出面试官这一轮要问的话。
+""".strip()
+    else:
+        stage_instruction = f"""
+现在是第 {payload.round + 1} 轮追问，最多 {payload.max_rounds} 轮。
+请先用 2-3 条短句反馈上一轮回答哪里不准确、缺了什么或表达哪里不清楚，然后继续追问同一知识点的一个更深切面。
+固定格式：
+**反馈**
+- ...
+
+**追问**
+...
+""".strip()
+
+    messages = [{"role": "system", "content": system_prompt}]
+    messages.extend(message.model_dump() for message in payload.messages[-20:])
+    messages.append({"role": "user", "content": stage_instruction})
+    return messages
+
+
+def build_coding_messages(payload: TrainingRequest, category: dict[str, Any], problem: dict[str, Any]) -> list[dict[str, str]]:
+    language = payload.language.strip() or "Python"
+    system_prompt = f"""
+{CODING_RULES}
+
+当前分类：{category["title"]}
+分类说明：{category.get("description", "")}
+编程语言：{language}
+当前题目：{problem["title"]}（{problem.get("difficulty", "Unknown")}）
+题面：
+{problem.get("prompt", "")}
+
+起始代码：
+{problem.get("starter_code", "")}
+
+训练依据：
+{build_reference_text(problem)}
+""".strip()
+
+    if should_generate_summary(payload):  # type: ignore[arg-type]
+        stage_instruction = CODING_SUMMARY_INSTRUCTION
+    elif payload.phase == "opening":
+        stage_instruction = """
+现在开始手撕代码训练。
+请先把当前题目抛给候选人，要求他先说明思路、复杂度和边界，再贴代码。
+不要给标准答案。
+""".strip()
+    else:
+        submitted_code = payload.code_answer.strip()
+        stage_instruction = f"""
+现在是第 {payload.round + 1} 轮手撕代码反馈，最多 {payload.max_rounds} 轮。
+候选人这轮提交的答案/代码如下：
+{submitted_code or "见对话历史。"}
+
+请做静态评审：指出正确性、复杂度、边界条件、代码表达中的具体问题；如果答案方向正确也要指出仍需补的细节。
+最后给一个继续追问的问题。不要声称你运行了代码。
+固定格式：
+**代码反馈**
+- ...
+
+**追问**
+...
+""".strip()
+
+    messages = [{"role": "system", "content": system_prompt}]
+    messages.extend(message.model_dump() for message in payload.messages[-20:])
+    messages.append({"role": "user", "content": stage_instruction})
+    return messages
+
+
+def critique_training_reply(reply: str, mode: TrainingMode, *, is_summary: bool) -> list[str]:
+    if is_summary:
+        return []
+
+    issues: list[str] = []
+    if len(reply.strip()) < 35:
+        issues.append("回复太短，缺少有效训练约束。")
+    if mode in {"knowledge", "coding"} and any(term in reply for term in ("简历里", "你简历", "项目经历")):
+        issues.append("该模式不应绑定简历或项目经历。")
+    if mode == "coding" and any(term in reply for term in ("我运行了", "测试通过", "执行结果")):
+        issues.append("手撕代码模式不能声称已经运行用户代码。")
+    if reply.count("？") + reply.count("?") > 3:
+        issues.append("一次问了太多问题，需要收敛。")
+    return issues[:3]
+
+
+def build_training_rewrite_messages(
+    payload: TrainingRequest,
+    draft_reply: str,
+    issues: list[str],
+    category: dict[str, Any],
+    item: dict[str, Any],
+    is_problem: bool,
+) -> list[dict[str, str]]:
+    messages = (
+        build_coding_messages(payload, category, item)
+        if is_problem
+        else build_knowledge_messages(payload, category, item)
+    )
+    messages.append({"role": "assistant", "content": draft_reply})
+    messages.append(
+        {
+            "role": "user",
+            "content": "\n".join(
+                [
+                    "上一个回复没有通过内部自检，请重写。",
+                    "自检问题：",
+                    *[f"- {issue}" for issue in issues],
+                    "重写要求：保留该训练模式的格式；反馈要具体；追问只保留一个主问题；不要解释自检过程。",
+                ]
+            ),
+        }
+    )
+    return messages
+
+
+def next_training_state(payload: TrainingRequest) -> tuple[InterviewPhase, int, bool]:
+    if should_generate_summary(payload):  # type: ignore[arg-type]
         return "completed", min(payload.round, payload.max_rounds), True
     if payload.phase == "opening":
         return "followup", 1, False
@@ -590,8 +955,7 @@ async def chat(payload: ChatRequest) -> ChatResponse:
     return ChatResponse(reply=reply, model=get_model_name())
 
 
-@app.post("/interview/message", response_model=InterviewResponse)
-async def interview_message(payload: InterviewRequest) -> InterviewResponse:
+async def run_interview_workflow(payload: InterviewRequest) -> InterviewResponse:
     resume_context = get_resume_context(payload)
     api_messages = [message.model_dump() for message in payload.messages]
     evidence = build_interview_evidence(payload.scenario, resume_context, payload.job_target, api_messages)
@@ -614,4 +978,67 @@ async def interview_message(payload: InterviewRequest) -> InterviewResponse:
         question_tags=list(evidence.question_tags),
         resume_evidence=evidence.resume_evidence,
         risk_hypothesis=evidence.risk_hypothesis,
+        feedback="复盘内容已在回复正文中给出。" if is_complete else "",
+    )
+
+
+@app.post("/interview/message", response_model=InterviewResponse)
+async def interview_message(payload: InterviewRequest) -> InterviewResponse:
+    return await run_interview_workflow(payload)
+
+
+@app.post("/training/message", response_model=TrainingResponse)
+async def training_message(payload: TrainingRequest) -> TrainingResponse:
+    if payload.mode == "resume":
+        scenario = payload.category
+        if scenario not in SCENARIO_CONFIG:
+            raise HTTPException(
+                status_code=422,
+                detail=f"未知简历训练场景：{scenario}。可选场景：{', '.join(SCENARIO_CONFIG)}",
+            )
+        interview_payload = InterviewRequest(
+            scenario=scenario,  # type: ignore[arg-type]
+            phase=payload.phase,
+            round=payload.round,
+            max_rounds=payload.max_rounds,
+            resume_text=payload.resume_text,
+            resume_filename=payload.resume_filename,
+            project_context=payload.project_context,
+            job_target=payload.job_target,
+            messages=payload.messages,
+        )
+        response = await run_interview_workflow(interview_payload)
+        return TrainingResponse(**response.model_dump())
+
+    category, item, is_problem = get_training_category_and_item(payload)
+    prompt_messages = (
+        build_coding_messages(payload, category, item)
+        if is_problem
+        else build_knowledge_messages(payload, category, item)
+    )
+    is_summary = should_generate_summary(payload)  # type: ignore[arg-type]
+    reply = await generate_model_reply(prompt_messages, temperature=0.72 if is_summary else 0.62)
+    issues = critique_training_reply(reply, payload.mode, is_summary=is_summary)
+    if issues:
+        rewrite_messages = build_training_rewrite_messages(payload, reply, issues, category, item, is_problem)
+        reply = await generate_model_reply(rewrite_messages, temperature=0.52)
+
+    next_phase, next_round, is_complete = next_training_state(payload)
+    item_response = build_item_response(category, item, is_problem=is_problem)
+    source_cards = build_item_source_cards(category, item, is_problem=is_problem)
+    return TrainingResponse(
+        reply=reply,
+        phase=next_phase,
+        round=next_round,
+        max_rounds=payload.max_rounds,
+        is_complete=is_complete,
+        model=get_model_name(),
+        source_cards=source_cards,
+        question_tags=item_response.tags[:8],
+        resume_evidence=f"当前训练项：{item_response.title}",
+        risk_hypothesis="常见挂点：" + "；".join(_as_text_list(item.get("common_mistakes"))[:3])
+        if not is_problem
+        else "评审重点：" + "；".join(_as_text_list(item.get("evaluation_points"))[:3]),
+        feedback="复盘内容已在回复正文中给出。" if is_complete else "",
+        item=item_response,
     )

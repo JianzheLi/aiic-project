@@ -3,13 +3,21 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import {
   AlertTriangle,
+  BookOpen,
   Bot,
+  BrainCircuit,
   ClipboardList,
+  Code,
+  Cpu,
+  Database,
   FileText,
+  House,
+  Layers,
   Loader2,
   Play,
   RefreshCw,
   RotateCcw,
+  Search,
   Send,
   Server,
   Sparkles,
@@ -21,10 +29,36 @@ import {
 
 type ChatRole = "user" | "assistant";
 type ConnectionState = "checking" | "ready" | "missing-key" | "error";
-type ScenarioId = "project_deep_dive" | "backend_fundamentals" | "rag_agent_review";
-type InterviewPhase = "opening" | "followup" | "summary" | "completed";
+type TrainingMode = "knowledge" | "resume" | "coding";
+type KnowledgeCategoryId = "backend_database" | "search_ads_rec" | "agent_llm" | "ai_algorithm";
+type ResumeScenarioId = "project_deep_dive" | "backend_fundamentals" | "rag_agent_review";
+type CodingCategoryId = "leetcode_core" | "ai_ops";
+type TrainingPhase = "opening" | "followup" | "summary" | "completed";
+type IconComponent = typeof ClipboardList;
 
-type InterviewMessage = {
+type InterviewSourceCard = {
+  id: string;
+  title: string;
+  url: string;
+  source_type: string;
+  tags: string[];
+  matched_terms: string[];
+  score: number;
+};
+
+type TrainingItem = {
+  id: string;
+  title: string;
+  category: string;
+  description: string;
+  prompt: string;
+  difficulty: string;
+  tags: string[];
+  starter_code: string;
+  source_url: string;
+};
+
+type TrainingMessage = {
   id: string;
   role: ChatRole;
   content: string;
@@ -34,18 +68,19 @@ type InterviewMessage = {
   riskHypothesis?: string;
 };
 
-type ScenarioSession = {
-  messages: InterviewMessage[];
+type TrainingSession = {
+  messages: TrainingMessage[];
   answerInput: string;
   debrief: string;
-  phase: InterviewPhase;
+  phase: TrainingPhase;
   round: number;
   maxRounds: number;
+  item?: TrainingItem;
 };
 
-type InterviewResponse = {
+type TrainingResponse = {
   reply: string;
-  phase: InterviewPhase;
+  phase: TrainingPhase;
   round: number;
   max_rounds: number;
   is_complete: boolean;
@@ -54,6 +89,8 @@ type InterviewResponse = {
   question_tags?: string[];
   resume_evidence?: string;
   risk_hypothesis?: string;
+  feedback?: string;
+  item?: TrainingItem | null;
 };
 
 type ResumeExtractResponse = {
@@ -68,16 +105,6 @@ type ResumeExtractResponse = {
   warning: string;
 };
 
-type InterviewSourceCard = {
-  id: string;
-  title: string;
-  url: string;
-  source_type: string;
-  tags: string[];
-  matched_terms: string[];
-  score: number;
-};
-
 type ConfigResponse = {
   model: string;
   provider: string;
@@ -85,11 +112,19 @@ type ConfigResponse = {
   api_key_configured: boolean;
 };
 
-type ScenarioOption = {
-  id: ScenarioId;
+type ModeOption = {
+  id: TrainingMode;
   title: string;
   description: string;
-  icon: typeof ClipboardList;
+  detail: string;
+  icon: IconComponent;
+};
+
+type CategoryOption<T extends string> = {
+  id: T;
+  title: string;
+  description: string;
+  icon: IconComponent;
 };
 
 type SampleResume = {
@@ -99,7 +134,58 @@ type SampleResume = {
   text: string;
 };
 
-const scenarios: ScenarioOption[] = [
+const modeOptions: ModeOption[] = [
+  {
+    id: "knowledge",
+    title: "八股知识点",
+    description: "纯知识点专项追问",
+    detail: "后端数据库、搜广推、Agent/LLM、AI算法分类练习",
+    icon: BookOpen,
+  },
+  {
+    id: "resume",
+    title: "简历经历",
+    description: "上传简历后按项目追问",
+    detail: "围绕项目真实性、个人贡献、失败路径和工程闭环复盘",
+    icon: ClipboardList,
+  },
+  {
+    id: "coding",
+    title: "手撕代码",
+    description: "算法题和 AI 算子评审",
+    detail: "LeetCode 高频题、MHA/Attention/LayerNorm 等实现题",
+    icon: Code,
+  },
+];
+
+const knowledgeCategories: CategoryOption<KnowledgeCategoryId>[] = [
+  {
+    id: "backend_database",
+    title: "后端 / 数据库",
+    description: "MySQL、Redis、MQ、并发、稳定性",
+    icon: Database,
+  },
+  {
+    id: "search_ads_rec",
+    title: "搜广推",
+    description: "召回、排序、CTR/CVR、A/B 实验",
+    icon: Search,
+  },
+  {
+    id: "agent_llm",
+    title: "Agent / LLM",
+    description: "RAG、工具调用、推理、采样、KV cache",
+    icon: BrainCircuit,
+  },
+  {
+    id: "ai_algorithm",
+    title: "AI 算法",
+    description: "Transformer、VAE、Diffusion、损失函数",
+    icon: Cpu,
+  },
+];
+
+const resumeScenarios: CategoryOption<ResumeScenarioId>[] = [
   {
     id: "project_deep_dive",
     title: "项目深挖压力面",
@@ -108,15 +194,30 @@ const scenarios: ScenarioOption[] = [
   },
   {
     id: "backend_fundamentals",
-    title: "后端八股项目化追问",
+    title: "后端项目追问",
     description: "Redis、MySQL、MQ、并发、接口、部署",
     icon: Server,
   },
   {
     id: "rag_agent_review",
-    title: "RAG/Agent 项目真实性拷打",
+    title: "RAG/Agent 项目追问",
     description: "数据、chunk、embedding、工具调用、评估",
     icon: Workflow,
+  },
+];
+
+const codingCategories: CategoryOption<CodingCategoryId>[] = [
+  {
+    id: "leetcode_core",
+    title: "LeetCode 高频算法",
+    description: "链表、哈希、堆、动态规划、区间题",
+    icon: Layers,
+  },
+  {
+    id: "ai_ops",
+    title: "AI 算子 / 模型实现",
+    description: "Attention、MHA、LayerNorm、采样实现",
+    icon: Code,
   },
 ];
 
@@ -153,11 +254,11 @@ function createMessageId() {
   return globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
-function toApiMessages(messages: InterviewMessage[]) {
+function toApiMessages(messages: TrainingMessage[]) {
   return messages.map(({ role, content }) => ({ role, content }));
 }
 
-function createEmptySession(): ScenarioSession {
+function createEmptySession(): TrainingSession {
   return {
     messages: [],
     answerInput: "",
@@ -168,25 +269,21 @@ function createEmptySession(): ScenarioSession {
   };
 }
 
-function createInitialSessions(): Record<ScenarioId, ScenarioSession> {
-  return {
-    project_deep_dive: createEmptySession(),
-    backend_fundamentals: createEmptySession(),
-    rag_agent_review: createEmptySession(),
-  };
-}
-
-function hasAnyStartedSession(sessions: Record<ScenarioId, ScenarioSession>) {
-  return Object.values(sessions).some((session) => session.messages.length > 0 || session.phase !== "opening");
+function getSessionKey(mode: TrainingMode, categoryId: string) {
+  return `${mode}:${categoryId}`;
 }
 
 function App() {
-  const [scenario, setScenario] = useState<ScenarioId>("project_deep_dive");
+  const [mode, setMode] = useState<TrainingMode | null>(null);
+  const [knowledgeCategory, setKnowledgeCategory] = useState<KnowledgeCategoryId>("backend_database");
+  const [resumeScenario, setResumeScenario] = useState<ResumeScenarioId>("project_deep_dive");
+  const [codingCategory, setCodingCategory] = useState<CodingCategoryId>("leetcode_core");
+  const [language, setLanguage] = useState("Python");
   const [resumeText, setResumeText] = useState("");
   const [resumeFilename, setResumeFilename] = useState("");
   const [resumeWarning, setResumeWarning] = useState("");
   const [jobTarget, setJobTarget] = useState("后端开发实习");
-  const [sessionsByScenario, setSessionsByScenario] = useState<Record<ScenarioId, ScenarioSession>>(createInitialSessions);
+  const [sessionsByKey, setSessionsByKey] = useState<Record<string, TrainingSession>>({});
   const [error, setError] = useState("");
   const [modelName, setModelName] = useState("");
   const [providerName, setProviderName] = useState("DeepSeek");
@@ -197,19 +294,25 @@ function App() {
   const requestInFlightRef = useRef(false);
   const apiBaseUrl = useMemo(getApiBaseUrl, []);
 
-  const activeScenario = scenarios.find((item) => item.id === scenario) ?? scenarios[0];
-  const activeSession = sessionsByScenario[scenario];
+  const selectedMode = mode ?? "knowledge";
+  const activeModeOption = modeOptions.find((item) => item.id === selectedMode) ?? modeOptions[0];
+  const activeCategoryId =
+    selectedMode === "knowledge" ? knowledgeCategory : selectedMode === "resume" ? resumeScenario : codingCategory;
+  const activeSessionKey = getSessionKey(selectedMode, activeCategoryId);
+  const activeSession = sessionsByKey[activeSessionKey] ?? createEmptySession();
   const hasStarted = activeSession.messages.length > 0 || activeSession.phase !== "opening";
-  const canStart = !isLoading && !isUploading;
+  const canStart = mode !== null && !isLoading && !isUploading;
   const canAnswer = hasStarted && activeSession.phase !== "completed" && activeSession.answerInput.trim().length > 0 && !isLoading;
   const resumeCharCount = resumeText.trim().length;
 
-  function replaceScenarioSession(scenarioId: ScenarioId, nextSession: ScenarioSession) {
-    setSessionsByScenario((current) => ({ ...current, [scenarioId]: nextSession }));
+  function replaceSession(sessionKey: string, nextSession: TrainingSession) {
+    setSessionsByKey((current) => ({ ...current, [sessionKey]: nextSession }));
   }
 
-  function resetAllSessions() {
-    setSessionsByScenario(createInitialSessions());
+  function clearResumeSessions() {
+    setSessionsByKey((current) =>
+      Object.fromEntries(Object.entries(current).filter(([sessionKey]) => !sessionKey.startsWith("resume:"))),
+    );
   }
 
   function updateResume(nextText: string, nextFilename = resumeFilename, nextWarning = "") {
@@ -217,9 +320,7 @@ function App() {
     setResumeFilename(nextFilename);
     setResumeWarning(nextWarning);
     setError("");
-    if (hasAnyStartedSession(sessionsByScenario)) {
-      resetAllSessions();
-    }
+    clearResumeSessions();
   }
 
   async function loadConfig() {
@@ -299,32 +400,58 @@ function App() {
     event.target.value = "";
   }
 
-  async function requestInterview(nextPhase: InterviewPhase, nextRound: number, nextMessages: InterviewMessage[], scenarioId: ScenarioId) {
-    const response = await fetch(`${apiBaseUrl}/interview/message`, {
+  function buildRequestBody(
+    nextPhase: TrainingPhase,
+    nextRound: number,
+    nextMessages: TrainingMessage[],
+    requestMode: TrainingMode,
+    categoryId: string,
+    session: TrainingSession,
+    codeAnswer = "",
+  ) {
+    return {
+      mode: requestMode,
+      category: categoryId,
+      phase: nextPhase,
+      round: nextRound,
+      max_rounds: session.maxRounds,
+      messages: toApiMessages(nextMessages),
+      resume_text: requestMode === "resume" ? resumeText.trim() : "",
+      resume_filename: requestMode === "resume" ? resumeFilename : "",
+      job_target: requestMode === "resume" ? jobTarget.trim() : "",
+      topic_id: requestMode === "knowledge" ? session.item?.id ?? "" : "",
+      problem_id: requestMode === "coding" ? session.item?.id ?? "" : "",
+      language: requestMode === "coding" ? language.trim() || "Python" : "",
+      code_answer: requestMode === "coding" ? codeAnswer : "",
+    };
+  }
+
+  async function requestTraining(
+    nextPhase: TrainingPhase,
+    nextRound: number,
+    nextMessages: TrainingMessage[],
+    requestMode: TrainingMode,
+    categoryId: string,
+    session: TrainingSession,
+    codeAnswer = "",
+  ) {
+    const response = await fetch(`${apiBaseUrl}/training/message`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        scenario: scenarioId,
-        phase: nextPhase,
-        round: nextRound,
-        max_rounds: sessionsByScenario[scenarioId].maxRounds,
-        resume_text: resumeText.trim(),
-        resume_filename: resumeFilename,
-        job_target: jobTarget.trim(),
-        messages: toApiMessages(nextMessages),
-      }),
+      body: JSON.stringify(buildRequestBody(nextPhase, nextRound, nextMessages, requestMode, categoryId, session, codeAnswer)),
     });
     const data = await response.json();
     if (!response.ok) {
       throw new Error(data.detail || "请求失败，请稍后重试。");
     }
-    return data as InterviewResponse;
+    return data as TrainingResponse;
   }
 
-  function applyInterviewResponse(data: InterviewResponse, nextMessages: InterviewMessage[], scenarioId: ScenarioId) {
-    const assistantMessage: InterviewMessage = {
+  function applyTrainingResponse(data: TrainingResponse, nextMessages: TrainingMessage[], sessionKey: string) {
+    const baseSession = sessionsByKey[sessionKey] ?? createEmptySession();
+    const assistantMessage: TrainingMessage = {
       id: createMessageId(),
       role: "assistant",
       content: data.reply,
@@ -334,37 +461,51 @@ function App() {
       riskHypothesis: data.risk_hypothesis ?? "",
     };
     const allMessages = [...nextMessages, assistantMessage];
-    replaceScenarioSession(scenarioId, {
-      ...sessionsByScenario[scenarioId],
+    replaceSession(sessionKey, {
+      ...baseSession,
       messages: allMessages,
       answerInput: "",
-      debrief: data.is_complete ? data.reply : sessionsByScenario[scenarioId].debrief,
+      debrief: data.is_complete ? data.reply : baseSession.debrief,
       phase: data.phase,
       round: data.round,
       maxRounds: data.max_rounds,
+      item: data.item ?? baseSession.item,
     });
     setModelName(data.model);
     setConnectionState("ready");
   }
 
-  async function startInterview() {
-    if (!beginRequest()) {
+  function getActiveContext() {
+    if (!mode) {
+      return null;
+    }
+    const categoryId = mode === "knowledge" ? knowledgeCategory : mode === "resume" ? resumeScenario : codingCategory;
+    return {
+      mode,
+      categoryId,
+      sessionKey: getSessionKey(mode, categoryId),
+      session: sessionsByKey[getSessionKey(mode, categoryId)] ?? createEmptySession(),
+    };
+  }
+
+  async function startTraining() {
+    const context = getActiveContext();
+    if (!context || !beginRequest()) {
       return;
     }
-    if (resumeText.trim().length < 30) {
+    if (context.mode === "resume" && resumeText.trim().length < 30) {
       finishRequest();
       setError("请先上传或粘贴至少 30 个字的简历内容，面试官才能围绕简历细节追问。");
       return;
     }
 
-    const scenarioId = scenario;
     const emptySession = createEmptySession();
-    replaceScenarioSession(scenarioId, emptySession);
+    replaceSession(context.sessionKey, emptySession);
     setError("");
 
     try {
-      const data = await requestInterview("opening", 0, [], scenarioId);
-      applyInterviewResponse(data, [], scenarioId);
+      const data = await requestTraining("opening", 0, [], context.mode, context.categoryId, emptySession);
+      applyTrainingResponse(data, [], context.sessionKey);
       setTimeout(() => answerRef.current?.focus(), 0);
     } catch (caughtError) {
       const message = caughtError instanceof Error ? caughtError.message : "请求失败，请稍后重试。";
@@ -376,24 +517,35 @@ function App() {
 
   async function sendAnswer(event?: FormEvent<HTMLFormElement>) {
     event?.preventDefault();
-    const content = activeSession.answerInput.trim();
-    if (!content || activeSession.phase === "completed" || !beginRequest()) {
+    const context = getActiveContext();
+    if (!context) {
+      return;
+    }
+    const content = context.session.answerInput.trim();
+    if (!content || context.session.phase === "completed" || !beginRequest()) {
       return;
     }
 
-    const scenarioId = scenario;
-    const userMessage: InterviewMessage = {
+    const userMessage: TrainingMessage = {
       id: createMessageId(),
       role: "user",
       content,
     };
-    const nextMessages = [...activeSession.messages, userMessage];
-    replaceScenarioSession(scenarioId, { ...activeSession, messages: nextMessages, answerInput: "" });
+    const nextMessages = [...context.session.messages, userMessage];
+    replaceSession(context.sessionKey, { ...context.session, messages: nextMessages, answerInput: "" });
     setError("");
 
     try {
-      const data = await requestInterview("followup", activeSession.round, nextMessages, scenarioId);
-      applyInterviewResponse(data, nextMessages, scenarioId);
+      const data = await requestTraining(
+        "followup",
+        context.session.round,
+        nextMessages,
+        context.mode,
+        context.categoryId,
+        context.session,
+        context.mode === "coding" ? content : "",
+      );
+      applyTrainingResponse(data, nextMessages, context.sessionKey);
     } catch (caughtError) {
       const message = caughtError instanceof Error ? caughtError.message : "请求失败，请稍后重试。";
       setError(message);
@@ -404,27 +556,35 @@ function App() {
   }
 
   async function endAndDebrief() {
-    if (!hasStarted || !beginRequest()) {
+    const context = getActiveContext();
+    if (!context || !hasStarted || !beginRequest()) {
       return;
     }
-    const scenarioId = scenario;
-    const pendingAnswer = activeSession.answerInput.trim()
+    const pendingAnswer = context.session.answerInput.trim()
       ? [
-          ...activeSession.messages,
+          ...context.session.messages,
           {
             id: createMessageId(),
             role: "user" as const,
-            content: activeSession.answerInput.trim(),
+            content: context.session.answerInput.trim(),
           },
         ]
-      : activeSession.messages;
+      : context.session.messages;
 
-    replaceScenarioSession(scenarioId, { ...activeSession, messages: pendingAnswer, answerInput: "" });
+    replaceSession(context.sessionKey, { ...context.session, messages: pendingAnswer, answerInput: "" });
     setError("");
 
     try {
-      const data = await requestInterview("summary", activeSession.round, pendingAnswer, scenarioId);
-      applyInterviewResponse(data, pendingAnswer, scenarioId);
+      const data = await requestTraining(
+        "summary",
+        context.session.round,
+        pendingAnswer,
+        context.mode,
+        context.categoryId,
+        context.session,
+        context.mode === "coding" ? context.session.answerInput.trim() : "",
+      );
+      applyTrainingResponse(data, pendingAnswer, context.sessionKey);
     } catch (caughtError) {
       const message = caughtError instanceof Error ? caughtError.message : "请求失败，请稍后重试。";
       setError(message);
@@ -434,25 +594,31 @@ function App() {
   }
 
   function handleKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
-    if (event.key === "Enter" && !event.shiftKey) {
+    if (selectedMode !== "coding" && event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();
       void sendAnswer();
     }
   }
 
-  function resetInterview() {
-    replaceScenarioSession(scenario, createEmptySession());
+  function resetTraining() {
+    replaceSession(activeSessionKey, createEmptySession());
     setError("");
     answerRef.current?.focus();
   }
 
   function updateAnswerInput(value: string) {
-    replaceScenarioSession(scenario, { ...activeSession, answerInput: value });
+    replaceSession(activeSessionKey, { ...activeSession, answerInput: value });
   }
 
   function useSampleResume(sample: SampleResume) {
     setJobTarget(sample.jobTarget);
     updateResume(sample.text, sample.filename);
+  }
+
+  function enterMode(nextMode: TrainingMode) {
+    setMode(nextMode);
+    setError("");
+    setTimeout(() => answerRef.current?.focus(), 0);
   }
 
   const statusText = {
@@ -462,10 +628,229 @@ function App() {
     error: "连接异常",
   }[connectionState];
 
+  const panelTitle =
+    selectedMode === "knowledge" ? "八股专项训练" : selectedMode === "resume" ? "简历经历追问" : "手撕代码训练";
+  const emptyState = {
+    knowledge: {
+      title: "选择分类，开始八股追问",
+      body: "AI 会围绕所选方向连续提问，并在你回答后指出知识漏洞和表达问题。",
+    },
+    resume: {
+      title: "上传简历，开始被追问",
+      body: "每个简历追问场景会保留独立对话；同一份简历可以分别练项目深挖、后端和 RAG/Agent。",
+    },
+    coding: {
+      title: "选择题类，开始手撕代码",
+      body: "先讲思路和复杂度，再粘贴代码；AI 会按正确性、边界和表达给反馈。",
+    },
+  }[selectedMode];
+  const answerPlaceholder =
+    selectedMode === "coding"
+      ? "粘贴你的思路、复杂度分析和代码。手撕代码模式支持多行输入，请用按钮提交。"
+      : hasStarted
+        ? "输入你的回答，Enter 发送，Shift+Enter 换行"
+        : selectedMode === "resume"
+          ? "先上传或粘贴简历并开始该场景面试"
+          : "先选择分类并开始训练";
+
+  function renderCategoryOptions<T extends string>(
+    label: string,
+    options: CategoryOption<T>[],
+    current: T,
+    onSelect: (next: T) => void,
+  ) {
+    return (
+      <div className="field-group">
+        <span className="field-label">{label}</span>
+        <div className="scenario-list" role="radiogroup" aria-label={label}>
+          {options.map((item) => {
+            const Icon = item.icon;
+            const session = sessionsByKey[getSessionKey(selectedMode, item.id)];
+            return (
+              <button
+                aria-checked={current === item.id}
+                className={`scenario-option ${current === item.id ? "scenario-active" : ""}`}
+                key={item.id}
+                onClick={() => onSelect(item.id)}
+                role="radio"
+                type="button"
+              >
+                <Icon size={17} />
+                <span>
+                  <strong>{item.title}</strong>
+                  <small>{session?.messages.length ? `已进行 ${session.round} 轮` : item.description}</small>
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
+  function renderModeControls() {
+    if (selectedMode === "knowledge") {
+      return (
+        <>
+          {renderCategoryOptions("八股分类", knowledgeCategories, knowledgeCategory, setKnowledgeCategory)}
+          <div className="training-note">
+            <strong>训练方式</strong>
+            <span>不需要简历。开始后按所选分类抽取知识点，回答后会先指出问题再继续追问。</span>
+          </div>
+        </>
+      );
+    }
+
+    if (selectedMode === "coding") {
+      return (
+        <>
+          {renderCategoryOptions("题目类型", codingCategories, codingCategory, setCodingCategory)}
+          <label className="field-group" htmlFor="coding-language">
+            <span className="field-label">编程语言</span>
+            <input
+              id="coding-language"
+              value={language}
+              onChange={(event) => setLanguage(event.target.value)}
+              placeholder="Python / Java / C++"
+              disabled={isLoading}
+            />
+          </label>
+          <div className="training-note">
+            <strong>评审方式</strong>
+            <span>这一版不运行代码，重点检查思路、复杂度、边界样例和 AI 算子 shape/数值稳定性。</span>
+          </div>
+        </>
+      );
+    }
+
+    return (
+      <>
+        {renderCategoryOptions("简历追问场景", resumeScenarios, resumeScenario, setResumeScenario)}
+
+        <div className="field-group">
+          <span className="field-label">上传简历</span>
+          <label className="upload-card" htmlFor="resume-file">
+            <Upload size={18} />
+            <span>{isUploading ? "正在解析..." : resumeFilename || "选择 PDF / DOCX / TXT 简历"}</span>
+            <small>{resumeCharCount ? `${resumeCharCount} 字符已就绪` : "文本 PDF 直接解析，扫描 PDF 会尝试 OCR"}</small>
+          </label>
+          <input
+            id="resume-file"
+            aria-label="上传简历文件"
+            className="file-input"
+            type="file"
+            accept=".pdf,.docx,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain"
+            onChange={handleFileChange}
+            disabled={isLoading || isUploading}
+          />
+          {resumeWarning ? <p className="warning-note">{resumeWarning}</p> : null}
+        </div>
+
+        <label className="field-group" htmlFor="resume-text">
+          <span className="field-label">简历内容（可粘贴备用）</span>
+          <textarea
+            id="resume-text"
+            value={resumeText}
+            onChange={(event) => updateResume(event.target.value, resumeFilename || "manual-resume.txt")}
+            placeholder="上传失败时，可以直接粘贴简历全文。建议包含教育经历、技能、项目、实习和目标岗位。"
+            rows={7}
+            disabled={isLoading || isUploading}
+          />
+        </label>
+
+        <label className="field-group" htmlFor="job-target">
+          <span className="field-label">目标岗位</span>
+          <input
+            id="job-target"
+            value={jobTarget}
+            onChange={(event) => setJobTarget(event.target.value)}
+            placeholder="例如：后端开发实习、AI 应用开发实习"
+            disabled={isLoading || isUploading}
+          />
+        </label>
+
+        <div className="sample-buttons" aria-label="样例简历">
+          {sampleResumes.map((sample) => (
+            <button className="secondary-button compact-text" key={sample.filename} type="button" onClick={() => useSampleResume(sample)} disabled={isLoading || isUploading}>
+              <FileText size={15} />
+              <span>{sample.label}</span>
+            </button>
+          ))}
+        </div>
+      </>
+    );
+  }
+
+  const connectionCard = (
+    <div className={`connection-card connection-${connectionState}`}>
+      <div className="connection-title">
+        <Wifi size={16} />
+        <span>{providerName}</span>
+        <button className="icon-button compact" type="button" onClick={loadConfig} aria-label="刷新连接状态">
+          <RefreshCw size={15} />
+        </button>
+      </div>
+      <strong>{statusText}</strong>
+      <p>{connectionState === "ready" ? "3000 同源代理已启用" : "正在检查运行状态"}</p>
+    </div>
+  );
+
+  if (!mode) {
+    return (
+      <main className="app-shell">
+        <section className="landing-panel" aria-label="AI 模拟面试官训练入口">
+          <header className="landing-header">
+            <div className="brand-lockup">
+              <div className="brand-mark">
+                <Sparkles size={20} />
+              </div>
+              <div>
+                <p className="eyebrow">AI Agent Challenge</p>
+                <h1>AI 模拟面试官</h1>
+                <p className="brand-subtitle">选择一种训练方式，进入对应练习界面</p>
+              </div>
+            </div>
+            <div className="landing-status">{connectionCard}</div>
+          </header>
+
+          <div className="mode-grid">
+            {modeOptions.map((item) => {
+              const Icon = item.icon;
+              return (
+                <button className="mode-card" key={item.id} onClick={() => enterMode(item.id)} type="button">
+                  <span className="mode-icon">
+                    <Icon size={26} />
+                  </span>
+                  <span>
+                    <strong>{item.title}</strong>
+                    <small>{item.description}</small>
+                    <em>{item.detail}</em>
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          {error ? (
+            <div className="error-banner landing-error" role="alert">
+              <AlertTriangle size={17} />
+              <span>{error}</span>
+            </div>
+          ) : null}
+
+          <div className="version-card landing-version" aria-label="版本信息">
+            <span>版本 {appVersion}</span>
+            <span>更新 {buildTime}</span>
+          </div>
+        </section>
+      </main>
+    );
+  }
+
   return (
     <main className="app-shell">
       <section className="interview-workspace" aria-label="AI 模拟面试官训练工作台">
-        <aside className="control-panel">
+        <aside className="control-panel training-control-panel">
           <div className="brand-lockup">
             <div className="brand-mark">
               <Sparkles size={20} />
@@ -473,103 +858,35 @@ function App() {
             <div>
               <p className="eyebrow">AI Agent Challenge</p>
               <h1>AI 模拟面试官</h1>
-              <p className="brand-subtitle">让简历经得起技术追问</p>
+              <p className="brand-subtitle">{activeModeOption.description}</p>
             </div>
           </div>
 
-          <div className={`connection-card connection-${connectionState}`}>
-            <div className="connection-title">
-              <Wifi size={16} />
-              <span>{providerName}</span>
-              <button className="icon-button compact" type="button" onClick={loadConfig} aria-label="刷新连接状态">
-                <RefreshCw size={15} />
-              </button>
-            </div>
-            <strong>{statusText}</strong>
-            <p>{connectionState === "ready" ? "3000 同源代理已启用" : "正在检查运行状态"}</p>
+          <button className="secondary-button back-button" type="button" onClick={() => setMode(null)} disabled={isLoading || isUploading}>
+            <House size={16} />
+            <span>返回训练首页</span>
+          </button>
+
+          {connectionCard}
+
+          <div className="mode-tabs" aria-label="训练入口切换">
+            {modeOptions.map((item) => {
+              const Icon = item.icon;
+              return (
+                <button className={`mode-tab ${mode === item.id ? "mode-tab-active" : ""}`} key={item.id} onClick={() => enterMode(item.id)} type="button">
+                  <Icon size={15} />
+                  <span>{item.title}</span>
+                </button>
+              );
+            })}
           </div>
 
-          <div className="field-group">
-            <span className="field-label">训练场景</span>
-            <div className="scenario-list" role="radiogroup" aria-label="训练场景">
-              {scenarios.map((item) => {
-                const Icon = item.icon;
-                const session = sessionsByScenario[item.id];
-                return (
-                  <button
-                    aria-checked={scenario === item.id}
-                    className={`scenario-option ${scenario === item.id ? "scenario-active" : ""}`}
-                    key={item.id}
-                    onClick={() => setScenario(item.id)}
-                    role="radio"
-                    type="button"
-                  >
-                    <Icon size={17} />
-                    <span>
-                      <strong>{item.title}</strong>
-                      <small>{session.messages.length ? `已进行 ${session.round} 轮` : item.description}</small>
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="field-group">
-            <span className="field-label">上传简历</span>
-            <label className="upload-card" htmlFor="resume-file">
-              <Upload size={18} />
-              <span>{isUploading ? "正在解析..." : resumeFilename || "选择 PDF / DOCX / TXT 简历"}</span>
-              <small>{resumeCharCount ? `${resumeCharCount} 字符已就绪` : "文本 PDF 直接解析，扫描 PDF 会尝试 OCR"}</small>
-            </label>
-            <input
-              id="resume-file"
-              aria-label="上传简历文件"
-              className="file-input"
-              type="file"
-              accept=".pdf,.docx,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain"
-              onChange={handleFileChange}
-              disabled={isLoading || isUploading}
-            />
-            {resumeWarning ? <p className="warning-note">{resumeWarning}</p> : null}
-          </div>
-
-          <label className="field-group" htmlFor="resume-text">
-            <span className="field-label">简历内容（可粘贴备用）</span>
-            <textarea
-              id="resume-text"
-              value={resumeText}
-              onChange={(event) => updateResume(event.target.value, resumeFilename || "manual-resume.txt")}
-              placeholder="上传失败时，可以直接粘贴简历全文。建议包含教育经历、技能、项目、实习和目标岗位。"
-              rows={7}
-              disabled={isLoading || isUploading}
-            />
-          </label>
-
-          <label className="field-group" htmlFor="job-target">
-            <span className="field-label">目标岗位</span>
-            <input
-              id="job-target"
-              value={jobTarget}
-              onChange={(event) => setJobTarget(event.target.value)}
-              placeholder="例如：后端开发实习、AI 应用开发实习"
-              disabled={isLoading || isUploading}
-            />
-          </label>
-
-          <div className="sample-buttons" aria-label="样例简历">
-            {sampleResumes.map((sample) => (
-              <button className="secondary-button compact-text" key={sample.filename} type="button" onClick={() => useSampleResume(sample)} disabled={isLoading || isUploading}>
-                <FileText size={15} />
-                <span>{sample.label}</span>
-              </button>
-            ))}
-          </div>
+          {renderModeControls()}
 
           <div className="button-row">
-            <button className="primary-button" type="button" onClick={startInterview} disabled={!canStart}>
+            <button className="primary-button" type="button" onClick={startTraining} disabled={!canStart}>
               {isLoading && !hasStarted ? <Loader2 className="spin" size={17} /> : <Play size={17} />}
-              <span>{hasStarted ? "重新开始该场景" : "开始面试"}</span>
+              <span>{hasStarted ? "重新开始当前训练" : `开始${activeModeOption.title}`}</span>
             </button>
           </div>
 
@@ -582,10 +899,10 @@ function App() {
         <section className="interview-panel">
           <header className="panel-header">
             <div>
-              <p className="section-label">{activeScenario.title}</p>
-              <h2>简历追问训练</h2>
+              <p className="section-label">{activeModeOption.title}</p>
+              <h2>{panelTitle}</h2>
             </div>
-            <div className="round-meter" aria-label="面试轮次">
+            <div className="round-meter" aria-label="训练轮次">
               <span>
                 第 {activeSession.round} / {activeSession.maxRounds} 轮
               </span>
@@ -594,13 +911,34 @@ function App() {
           </header>
 
           <div className="message-timeline" aria-live="polite">
+            {activeSession.item && selectedMode === "coding" ? (
+              <section className="active-item-card" aria-label="当前手撕题目">
+                <div>
+                  <p className="section-label">{activeSession.item.difficulty || "Coding"}</p>
+                  <h3>{activeSession.item.title}</h3>
+                  <p>{activeSession.item.prompt}</p>
+                </div>
+                {activeSession.item.starter_code ? <pre className="problem-starter">{activeSession.item.starter_code}</pre> : null}
+              </section>
+            ) : null}
+
+            {activeSession.item && selectedMode === "knowledge" ? (
+              <section className="active-item-card compact-item" aria-label="当前八股知识点">
+                <div>
+                  <p className="section-label">当前知识点</p>
+                  <h3>{activeSession.item.title}</h3>
+                  <p>{activeSession.item.prompt}</p>
+                </div>
+              </section>
+            ) : null}
+
             {activeSession.messages.length === 0 ? (
               <div className="empty-state">
                 <div className="empty-icon">
                   <Bot size={26} />
                 </div>
-                <h3>上传简历，开始被追问</h3>
-                <p>每个训练场景会保留独立对话；切换场景后可以从同一份简历开启不同面试。</p>
+                <h3>{emptyState.title}</h3>
+                <p>{emptyState.body}</p>
               </div>
             ) : (
               activeSession.messages.map((message) => (
@@ -608,16 +946,18 @@ function App() {
                   <span className="avatar">{message.role === "user" ? <UserRound size={16} /> : <Bot size={16} />}</span>
                   <div>
                     <span className="message-role">{message.role === "user" ? "候选人" : "AI 面试官"}</span>
-                    <p>{message.content}</p>
+                    <div className="message-content">
+                      <ReactMarkdown remarkPlugins={[remarkGfm]}>{message.content}</ReactMarkdown>
+                    </div>
                     {message.role === "assistant" && (message.sourceCards?.length || message.resumeEvidence || message.riskHypothesis) ? (
                       <section className="evidence-panel" aria-label="本轮追问依据">
                         <div className="evidence-row">
-                          <strong>简历证据</strong>
-                          <span>{message.resumeEvidence || "已基于当前简历抽取项目线索"}</span>
+                          <strong>{selectedMode === "resume" ? "简历证据" : "训练依据"}</strong>
+                          <span>{message.resumeEvidence || "已基于当前训练项生成追问"}</span>
                         </div>
                         <div className="evidence-row">
-                          <strong>风险假设</strong>
-                          <span>{message.riskHypothesis || "围绕项目真实性和工程闭环继续追问"}</span>
+                          <strong>{selectedMode === "coding" ? "评审重点" : "风险假设"}</strong>
+                          <span>{message.riskHypothesis || "围绕当前训练目标继续追问"}</span>
                         </div>
                         {message.questionTags?.length ? (
                           <div className="tag-list" aria-label="问题标签">
@@ -651,7 +991,7 @@ function App() {
                 </span>
                 <div>
                   <span className="message-role">AI 面试官</span>
-                  <p className="typing">正在追问...</p>
+                  <p className="typing">正在生成...</p>
                 </div>
               </article>
             ) : null}
@@ -672,31 +1012,31 @@ function App() {
               value={activeSession.answerInput}
               onChange={(event) => updateAnswerInput(event.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder={hasStarted ? "输入你的回答，Enter 发送，Shift+Enter 换行" : "先上传或粘贴简历并开始该场景面试"}
-              rows={3}
+              placeholder={answerPlaceholder}
+              rows={selectedMode === "coding" ? 7 : 3}
               disabled={isLoading || !hasStarted || activeSession.phase === "completed"}
             />
             <div className="composer-actions">
               <button className="send-button" type="submit" disabled={!canAnswer}>
                 {isLoading && hasStarted ? <Loader2 className="spin" size={18} /> : <Send size={18} />}
-                <span>发送回答</span>
+                <span>{selectedMode === "coding" ? "提交代码" : "发送回答"}</span>
               </button>
               <button className="secondary-button" type="button" onClick={endAndDebrief} disabled={isLoading || !hasStarted}>
                 <ClipboardList size={17} />
                 <span>结束并复盘</span>
               </button>
-              <button className="ghost-button" type="button" onClick={resetInterview} disabled={isLoading}>
+              <button className="ghost-button" type="button" onClick={resetTraining} disabled={isLoading}>
                 <RotateCcw size={16} />
-                <span>重练该场景</span>
+                <span>重练当前项</span>
               </button>
             </div>
           </form>
         </section>
 
-        <aside className="debrief-panel" aria-label="面试复盘">
+        <aside className="debrief-panel" aria-label="训练反馈">
           <header className="debrief-header">
             <p className="section-label">Debrief</p>
-            <h2>结构化复盘</h2>
+            <h2>结构化反馈</h2>
           </header>
           {activeSession.debrief ? (
             <div className="markdown-body">
@@ -706,7 +1046,7 @@ function App() {
             <div className="debrief-empty">
               <ClipboardList size={28} />
               <h3>复盘会出现在这里</h3>
-              <p>结束当前场景后，你会看到总评、挂点、维度反馈和下一轮行动。</p>
+              <p>结束当前训练后，你会看到总评、挂点、维度反馈和下一轮行动。</p>
             </div>
           )}
         </aside>

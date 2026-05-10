@@ -54,6 +54,19 @@ def interview_payload(**overrides: object) -> dict[str, object]:
     return payload
 
 
+def training_payload(**overrides: object) -> dict[str, object]:
+    payload: dict[str, object] = {
+        "mode": "knowledge",
+        "category": "agent_llm",
+        "phase": "opening",
+        "round": 0,
+        "max_rounds": 5,
+        "messages": [],
+    }
+    payload.update(overrides)
+    return payload
+
+
 def test_health() -> None:
     response = client.get("/health")
     assert response.status_code == 200
@@ -399,6 +412,98 @@ def test_invalid_scenario_is_validation_error() -> None:
     response = client.post("/interview/message", json=interview_payload(scenario="frontend"))
 
     assert response.status_code == 422
+
+
+def test_training_knowledge_opening_without_resume(monkeypatch: pytest.MonkeyPatch) -> None:
+    captured = stub_completion(monkeypatch, "请解释 RAG 中 chunk、embedding 召回和 rerank 分别解决什么问题，并说明一个常见坏例如何归因。")
+
+    response = client.post("/training/message", json=training_payload(category="agent_llm"))
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["phase"] == "followup"
+    assert data["round"] == 1
+    assert data["item"]["category"] == "agent_llm"
+    assert data["source_cards"]
+    assert "rag" in data["question_tags"]
+    prompt_text = "\n".join(message["content"] for message in captured["messages"])  # type: ignore[index]
+    assert "纯知识点训练" in prompt_text
+    assert "Agent / LLM" in prompt_text
+    assert "候选人简历" not in prompt_text
+
+
+def test_training_coding_opening_returns_problem(monkeypatch: pytest.MonkeyPatch) -> None:
+    captured = stub_completion(monkeypatch, "请先实现 scaled dot-product attention，说明 q/k/v 的 shape、mask 处理方式、复杂度，然后贴出代码。")
+
+    response = client.post("/training/message", json=training_payload(mode="coding", category="ai_ops"))
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["item"]["id"] == "scaled-dot-product-attention"
+    assert "starter_code" in data["item"]
+    assert "attention" in data["question_tags"]
+    prompt_text = "\n".join(message["content"] for message in captured["messages"])  # type: ignore[index]
+    assert "不运行用户代码" in prompt_text
+    assert "shape 为 [B, H, T, D]" in prompt_text
+
+
+def test_training_coding_followup_reviews_code(monkeypatch: pytest.MonkeyPatch) -> None:
+    captured = stub_completion(
+        monkeypatch,
+        "**代码反馈**\n- 你写出了 qk 相乘，但没有除以 sqrt(D)，mask 也没有在 softmax 前处理。\n\n**追问**\n如果 mask 的 shape 是 [B, 1, T, T]，你会如何保证它能广播到 attention logits？",
+    )
+
+    response = client.post(
+        "/training/message",
+        json=training_payload(
+            mode="coding",
+            category="ai_ops",
+            phase="followup",
+            round=1,
+            problem_id="scaled-dot-product-attention",
+            language="Python",
+            code_answer="scores = q @ k.transpose(-2, -1)\nreturn scores.softmax(-1) @ v",
+            messages=[
+                {"role": "assistant", "content": "请实现 attention。"},
+                {"role": "user", "content": "scores = q @ k.transpose(-2, -1)\nreturn scores.softmax(-1) @ v"},
+            ],
+        ),
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["round"] == 2
+    assert "代码反馈" in data["reply"]
+    prompt_text = "\n".join(message["content"] for message in captured["messages"])  # type: ignore[index]
+    assert "scores = q @ k.transpose" in prompt_text
+    assert "不要声称你运行了代码" in prompt_text
+
+
+def test_training_resume_mode_reuses_resume_workflow(monkeypatch: pytest.MonkeyPatch) -> None:
+    captured = stub_completion(monkeypatch, "你简历里写了 Redis 缓存。请说明缓存失效、数据库更新和失败重试如何配合。")
+
+    response = client.post(
+        "/training/message",
+        json=training_payload(
+            mode="resume",
+            category="backend_fundamentals",
+            resume_text="候选人简历：校园交易平台，负责 Spring Boot、MySQL、Redis 缓存和 RabbitMQ 通知。",
+            job_target="后端开发实习",
+        ),
+    )
+
+    assert response.status_code == 200
+    assert response.json()["source_cards"]
+    prompt_text = "\n".join(message["content"] for message in captured["messages"])  # type: ignore[index]
+    assert "后端八股项目化追问" in prompt_text
+    assert "候选人简历" in prompt_text
+
+
+def test_training_rejects_invalid_category() -> None:
+    response = client.post("/training/message", json=training_payload(mode="coding", category="unknown"))
+
+    assert response.status_code == 422
+    assert "未知手撕代码分类" in response.json()["detail"]
 
 
 def test_deepseek_v4_pro_enables_thinking(monkeypatch: pytest.MonkeyPatch) -> None:
