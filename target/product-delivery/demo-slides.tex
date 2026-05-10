@@ -128,24 +128,10 @@
 
 \begin{frame}{核心引擎：Agentic RAG 面试官}
   \begin{center}
-    \begin{tikzpicture}[node distance=0.42cm, every node/.style={font=\small}]
-      \node[draw,rounded corners,fill=pitchlight,minimum width=2.6cm,minimum height=0.75cm] (input) {简历 / 岗位 / 回答};
-      \node[draw,rounded corners,fill=pitchlight,below=of input,minimum width=2.6cm,minimum height=0.75cm] (cards) {资料卡检索};
-      \node[draw,rounded corners,fill=pitchlight,right=1.0cm of cards,minimum width=2.6cm,minimum height=0.75cm] (gen) {问题生成};
-      \node[draw,rounded corners,fill=pitchlight,right=1.0cm of gen,minimum width=2.8cm,minimum height=0.75cm] (critic) {Critic 自检重写};
-      \node[draw,rounded corners,fill=pitchlight,below=of gen,minimum width=2.6cm,minimum height=0.75cm] (report) {结构化复盘};
-      \node[draw,rounded corners,fill=pitchlight,above=of gen,minimum width=2.8cm,minimum height=0.75cm] (llm) {DeepSeek V4-Pro};
-      \draw[-{Latex[length=2.2mm]},thick,pitchblue] (input) -- (cards);
-      \draw[-{Latex[length=2.2mm]},thick,pitchblue] (cards) -- (gen);
-      \draw[-{Latex[length=2.2mm]},thick,pitchblue] (gen) -- (critic);
-      \draw[-{Latex[length=2.2mm]},thick,pitchblue] (critic) |- (report);
-      \draw[<->,thick,pitchcyan] (llm) -- (gen);
-      \draw[<->,thick,pitchcyan] (llm) -- (critic);
-      \draw[-{Latex[length=2.2mm]},dashed,pitchcyan] (report.west) .. controls +(left:2.0cm) and +(left:2.0cm) .. (cards.west);
-    \end{tikzpicture}
+    \includegraphics[width=\linewidth,height=0.72\textheight,keepaspectratio]{fig/image.png}
   \end{center}
   \small
-  不是简单 RAG 问答：系统先找依据，再结合简历生成追问；如果问题泛泛、脱离简历或索要不合理精确数字，就由 critic 重写。
+  不是简单 RAG 问答：系统把简历解析、资料卡检索、问题生成、critic 自检、LLM 能力和结构化复盘串成一个训练闭环。
 \end{frame}
 
 \begin{frame}{差异化：从“会回答问题”到“会训练用户”}

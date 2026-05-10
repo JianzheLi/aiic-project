@@ -5,6 +5,7 @@
 \usepackage{xcolor}
 \usepackage{booktabs}
 \usepackage{array}
+\usepackage{graphicx}
 \usepackage{tikz}
 \usetikzlibrary{positioning,arrows.meta}
 
@@ -108,36 +109,13 @@
 \end{minipage}
 
 \sectionline{3. 设计与实现方案}
-\begin{minipage}[t]{0.47\linewidth}
 \small
-\textbf{用户流程}
-\begin{enumerate}[leftmargin=1.25em,itemsep=0.01em,topsep=0.01em]
-  \item 选择训练入口；
-  \item 上传 PDF 简历或加载内置 PDF 假简历；
-  \item AI 面试官追问并展示依据；
-  \item 结束后生成挂点复盘和下一轮训练动作。
-\end{enumerate}
-\textbf{当前实现：}FastAPI + Vite/React + Docker Compose；浏览器只访问 \texttt{3000}，通过 \texttt{/api/*} 同源代理后端；DeepSeek \texttt{deepseek-v4-pro} 负责追问和复盘。
-\end{minipage}
-\hfill
-\begin{minipage}[t]{0.49\linewidth}
-\centering
-\begin{tikzpicture}[node distance=0.30cm, every node/.style={font=\scriptsize}]
-  \node[draw,rounded corners,fill=memolight,minimum width=2.0cm,minimum height=0.48cm] (input) {简历/岗位/回答};
-  \node[draw,rounded corners,fill=memolight,below=of input,minimum width=2.0cm,minimum height=0.48cm] (cards) {资料卡检索};
-  \node[draw,rounded corners,fill=memolight,right=0.65cm of cards,minimum width=1.85cm,minimum height=0.48cm] (gen) {问题生成};
-  \node[draw,rounded corners,fill=memolight,right=0.65cm of gen,minimum width=2.05cm,minimum height=0.48cm] (critic) {critic 重写};
-  \node[draw,rounded corners,fill=memolight,below=of gen,minimum width=1.85cm,minimum height=0.48cm] (report) {结构化复盘};
-  \node[draw,rounded corners,fill=memolight,above=of gen,minimum width=2.05cm,minimum height=0.48cm] (llm) {DeepSeek};
-  \draw[-{Latex[length=1.8mm]},thick,memoblue] (input) -- (cards);
-  \draw[-{Latex[length=1.8mm]},thick,memoblue] (cards) -- (gen);
-  \draw[-{Latex[length=1.8mm]},thick,memoblue] (gen) -- (critic);
-  \draw[-{Latex[length=1.8mm]},thick,memoblue] (critic) |- (report);
-  \draw[<->,thick,memocyan] (llm) -- (gen);
-  \draw[<->,thick,memocyan] (llm) -- (critic);
-  \draw[-{Latex[length=1.8mm]},dashed,memocyan] (report.west) .. controls +(left:1.25cm) and +(left:1.25cm) .. (cards.west);
-\end{tikzpicture}
-\end{minipage}
+\textbf{用户流程：}选择训练入口；上传 PDF 简历或加载内置 PDF 假简历；AI 面试官追问并展示依据；结束后生成挂点复盘和下一轮训练动作。\quad
+\textbf{实现概要：}FastAPI + Vite/React + Docker Compose；浏览器只访问 \texttt{3000}，通过 \texttt{/api/*} 同源代理后端；DeepSeek \texttt{deepseek-v4-pro} 负责追问和复盘。
+
+\begin{center}
+\includegraphics[width=0.93\linewidth,height=4.2cm,keepaspectratio]{fig/image.png}
+\end{center}
 
 \sectionline{4. 商业目标、指标与行动计划}
 \begin{minipage}[t]{0.48\linewidth}
