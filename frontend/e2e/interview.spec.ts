@@ -29,6 +29,9 @@ async function mockResumeExtract(page: import("@playwright/test").Page) {
         text: resumeText,
         character_count: resumeText.length,
         truncated: false,
+        extraction_method: "txt",
+        ocr_used: false,
+        page_count: null,
         warning: "",
       }),
     });
@@ -61,6 +64,20 @@ async function mockInterview(page: import("@playwright/test").Page) {
         max_rounds: request.max_rounds,
         is_complete: isSummary,
         model: "deepseek-v4-pro",
+        source_cards: [
+          {
+            id: "rag-milvus-009",
+            title: "Milvus hybrid search reranking",
+            url: "https://milvus.io/docs/reranking.md",
+            source_type: "official-doc",
+            tags: ["rag", "retrieval", "rerank", "evaluation"],
+            matched_terms: ["Milvus", "rerank", "embedding"],
+            score: 18.5,
+          },
+        ],
+        question_tags: ["rag", "retrieval", "rerank", "evaluation"],
+        resume_evidence: "项目：智能课程问答系统，负责 PDF 解析、chunk 策略、检索链路、Prompt 调优和 Docker 部署。",
+        risk_hypothesis: "候选人可能只描述了 RAG 流程，但缺少 chunk/rerank 参数选择、坏例归因和评估指标。",
       }),
     });
   });
@@ -94,6 +111,8 @@ test("uploads a resume and runs the core interview flow", async ({ page }) => {
   await page.getByRole("button", { name: "开始面试" }).click();
 
   await expect(page.getByText("chunk 大小")).toBeVisible();
+  await expect(page.getByLabel("本轮追问依据").getByText("Milvus hybrid search reranking").first()).toBeVisible();
+  await expect(page.getByLabel("问题标签").getByText("rerank").first()).toBeVisible();
   await expect(page.getByText("第 1 / 5 轮")).toBeVisible();
 
   await page.getByLabel("你的回答").fill("我用 500 字切块，重叠 80 字，主要根据课程章节和召回坏例调整。");
@@ -169,6 +188,10 @@ test("guards rapid repeated start clicks", async ({ page }) => {
         max_rounds: 5,
         is_complete: false,
         model: "deepseek-v4-pro",
+        source_cards: [],
+        question_tags: [],
+        resume_evidence: "",
+        risk_hypothesis: "",
       }),
     });
   });

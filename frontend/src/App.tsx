@@ -28,6 +28,10 @@ type InterviewMessage = {
   id: string;
   role: ChatRole;
   content: string;
+  sourceCards?: InterviewSourceCard[];
+  questionTags?: string[];
+  resumeEvidence?: string;
+  riskHypothesis?: string;
 };
 
 type ScenarioSession = {
@@ -46,6 +50,10 @@ type InterviewResponse = {
   max_rounds: number;
   is_complete: boolean;
   model: string;
+  source_cards?: InterviewSourceCard[];
+  question_tags?: string[];
+  resume_evidence?: string;
+  risk_hypothesis?: string;
 };
 
 type ResumeExtractResponse = {
@@ -54,7 +62,20 @@ type ResumeExtractResponse = {
   text: string;
   character_count: number;
   truncated: boolean;
+  extraction_method: "text" | "ocr" | "docx" | "txt";
+  ocr_used: boolean;
+  page_count: number | null;
   warning: string;
+};
+
+type InterviewSourceCard = {
+  id: string;
+  title: string;
+  url: string;
+  source_type: string;
+  tags: string[];
+  matched_terms: string[];
+  score: number;
 };
 
 type ConfigResponse = {
@@ -260,7 +281,8 @@ function App() {
         throw new Error(data.detail || "简历解析失败，请换一个文件或直接粘贴简历文本。");
       }
       const resumeData = data as ResumeExtractResponse;
-      updateResume(resumeData.text, resumeData.filename, resumeData.warning);
+      const methodNote = resumeData.ocr_used ? "已对扫描 PDF 使用本地 OCR，请检查错别字后开始面试。" : "";
+      updateResume(resumeData.text, resumeData.filename, [resumeData.warning, methodNote].filter(Boolean).join(" "));
     } catch (caughtError) {
       const message = caughtError instanceof Error ? caughtError.message : "简历解析失败，请稍后重试。";
       setError(message);
@@ -306,6 +328,10 @@ function App() {
       id: createMessageId(),
       role: "assistant",
       content: data.reply,
+      sourceCards: data.source_cards ?? [],
+      questionTags: data.question_tags ?? [],
+      resumeEvidence: data.resume_evidence ?? "",
+      riskHypothesis: data.risk_hypothesis ?? "",
     };
     const allMessages = [...nextMessages, assistantMessage];
     replaceScenarioSession(scenarioId, {
@@ -494,7 +520,7 @@ function App() {
             <label className="upload-card" htmlFor="resume-file">
               <Upload size={18} />
               <span>{isUploading ? "正在解析..." : resumeFilename || "选择 PDF / DOCX / TXT 简历"}</span>
-              <small>{resumeCharCount ? `${resumeCharCount} 字符已就绪` : "扫描 PDF 暂不支持，可改为粘贴文本"}</small>
+              <small>{resumeCharCount ? `${resumeCharCount} 字符已就绪` : "文本 PDF 直接解析，扫描 PDF 会尝试 OCR"}</small>
             </label>
             <input
               id="resume-file"
@@ -583,6 +609,37 @@ function App() {
                   <div>
                     <span className="message-role">{message.role === "user" ? "候选人" : "AI 面试官"}</span>
                     <p>{message.content}</p>
+                    {message.role === "assistant" && (message.sourceCards?.length || message.resumeEvidence || message.riskHypothesis) ? (
+                      <section className="evidence-panel" aria-label="本轮追问依据">
+                        <div className="evidence-row">
+                          <strong>简历证据</strong>
+                          <span>{message.resumeEvidence || "已基于当前简历抽取项目线索"}</span>
+                        </div>
+                        <div className="evidence-row">
+                          <strong>风险假设</strong>
+                          <span>{message.riskHypothesis || "围绕项目真实性和工程闭环继续追问"}</span>
+                        </div>
+                        {message.questionTags?.length ? (
+                          <div className="tag-list" aria-label="问题标签">
+                            {message.questionTags.slice(0, 6).map((tag) => (
+                              <span key={tag}>{tag}</span>
+                            ))}
+                          </div>
+                        ) : null}
+                        {message.sourceCards?.length ? (
+                          <ul className="source-list">
+                            {message.sourceCards.slice(0, 3).map((card) => (
+                              <li key={card.id}>
+                                <a href={card.url} target="_blank" rel="noreferrer">
+                                  {card.title}
+                                </a>
+                                <small>{card.matched_terms.length ? card.matched_terms.slice(0, 4).join(" / ") : card.source_type}</small>
+                              </li>
+                            ))}
+                          </ul>
+                        ) : null}
+                      </section>
+                    ) : null}
                   </div>
                 </article>
               ))
