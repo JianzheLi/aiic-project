@@ -36,7 +36,7 @@
 
 - 缺少高频、低成本的模拟面试机会。
 - 不知道自己的回答问题出在哪里，只能得到“多刷题”“表达不清楚”这类泛泛建议。
-- 面试准备容易停留在背八股或刷题，缺少针对项目经历的连续追问。
+- 面试准备容易停留在背八股或刷题，缺少针对自己简历和项目经历的连续追问。
 - 面对追问时容易暴露项目细节不扎实、思路跳跃、表达无结构等问题。
 
 ### 待补充调研
@@ -61,7 +61,7 @@
 先不做完整招聘系统，而是做一个面向技术实习面试的训练闭环：
 
 1. 用户选择面试场景。
-2. 用户输入简历片段、项目经历或岗位方向。
+2. 用户上传 PDF/DOCX/TXT 简历，或粘贴简历文本；岗位方向可选。
 3. AI 面试官按技术实习场景连续追问。
 4. 用户用文字作答。
 5. AI 给出结构化反馈、评分和下一轮改进建议。
@@ -69,18 +69,20 @@
 
 ### 待定产品取舍
 
-- [x] 首版要求用户粘贴“项目经历/简历片段”，岗位 JD 可选；不做完整简历解析。
+- [x] 首版输入升级为上传 PDF/DOCX/TXT 简历或粘贴简历文本，岗位 JD 可选；扫描 PDF/OCR 暂不做。
 - [x] 反馈维度确定为：项目可信度、专业深度、表达结构、工程闭环、承压表现、下一步行动。
 - [x] 产品第一屏改成“面试训练工作台”，不是普通聊天页。
-- [x] Demo 视频前 30 秒的 wow moment：用户贴一段项目经历后，AI 抓住技术栈连续追问，并指出最可能被问挂的点。
+- [x] Demo 视频前 30 秒的 wow moment：用户上传简历后，AI 抓住简历里的具体技术栈和项目风险点连续追问，并指出最可能被问挂的点。
 - [x] 首版明确不做：登录、数据库、语音、视频、完整题库浏览器、复杂招聘 pipeline。
 - [x] 完成 Agent 架构与产品设计调研，详见 `target/agent-architecture-design/`。
 - [x] 首版架构确定为“轻量状态机 workflow + 场景化 prompt pack + 结构化复盘”，不引入 LangGraph、AutoGen、CrewAI 或 OpenAI Agents SDK 作为运行时依赖。
+- [x] 训练场景切换改为“每个场景独立对话”，同一份简历可以分别练项目深挖、后端八股和 RAG/Agent。
+- [x] 默认模型升级为 `deepseek-v4-pro`，并对该模型启用 thinking 和 high reasoning effort。
 
 ### MVP 方向草案
 
 - 场景选择：首版优先提供 3 个中文训练场景：项目深挖压力面、后端八股项目化追问、RAG/Agent 项目真实性拷打。
-- 面试流程：开始面试、连续追问、结束并总结。
+- 面试流程：上传/粘贴简历、选择场景、开始面试、连续追问、结束并总结。
 - 反馈输出：总评、亮点、风险点、项目可信度、表达结构、工程闭环、承压表现、可执行改进建议、下一轮练习题。
 - 交互体验：让用户明显感到这是“面试训练产品”，不是普通聊天框。
 - 后端提示词：区分面试官、追问者和教练反馈三类行为，但先保持单接口实现。
@@ -96,6 +98,7 @@
 - [x] 完成实现设计：新增 `/interview/message`，保留 `/chat`、`/config`、`/health`，详见 `target/agent-architecture-design/implementation-design.md`。
 - [x] 改造前端，从通用聊天 demo 变成模拟面试训练界面。
 - [x] 改造后端系统提示词和返回逻辑，支持面试追问与结构化反馈。
+- [x] 新增 `/resume/extract`，支持 PDF/DOCX/TXT 简历解析；扫描 PDF 给出清晰错误。
 - [x] 补充 README 的产品定位、运行方式、技术栈和提交说明。
 - [x] 本地或服务器验证 `/health`、`/api/config`、`/api/chat`。
 - [x] Docker Compose 重新构建并部署到公网 demo。
@@ -110,10 +113,10 @@
 ## Product Memo 素材池
 
 - 目标用户与核心痛点：基于三轮公开调研整合，详见 `target/research/synthesis.md` 和 `target/research/final-report/ai-interviewer-research-report.md`。
-- 产品设计说明：强调窄场景、项目经历驱动、连续追问、结构化挂点复盘；完整设计见 `target/agent-architecture-design/design-proposal.md`。
+- 产品设计说明：强调窄场景、简历驱动、连续追问、结构化挂点复盘；完整设计见 `target/agent-architecture-design/design-proposal.md`。
 - 版本迭代记录：从通用聊天样本到模拟面试官；后续每次关键变更继续记录。
 - 交付材料草稿：`target/product-delivery/`。
-- 下一步设计：首版之后可选方向包括 JD 匹配、简历解析、语音练习、历史记录、个性化题库；需要 tools/session/tracing 时再考虑 OpenAI Agents SDK，需要长期状态和 human-in-the-loop 时再考虑 LangGraph。
+- 下一步设计：首版之后可选方向包括 OCR 扫描简历、JD 匹配、语音练习、历史记录、个性化题库；需要 tools/session/tracing 时再考虑 OpenAI Agents SDK，需要长期状态和 human-in-the-loop 时再考虑 LangGraph。
 - AI 工具使用：Codex 用于代码理解、计划维护、实现和调试；LLM API 用于面试官能力。
 
 ## 决策记录
@@ -123,8 +126,9 @@
 - 2026-05-10：安装 `xhs-apis` skill，用于小红书公开内容调研；使用时需要本地提供有效 cookie。
 - 2026-05-10：验证 `xhs-apis` 可正常搜索小红书笔记、读取笔记详情和读取评论，能用于阶段一用户调研。
 - 2026-05-10：完成小红书公开内容调研，采集 158 条去重样本，其中核心岗位样本 144 条，综合结论沉淀到 `target/research/xhs-tech-intern-interviews/findings.md`。
-- 2026-05-10：完成第二轮广泛公开调研，建立 `target/research/interview-questioning-playbook/`，采集 204 条结构化样本；产品判断更新为“以项目经历驱动的连续追问 + 结构化挂点复盘”为 MVP 核心闭环。
-- 2026-05-10：完成第三轮需求验证和 research 总整合；首版输入确定为项目经历文本，JD 可选，产品形态确定为面试训练工作台。
+- 2026-05-10：完成第二轮广泛公开调研，建立 `target/research/interview-questioning-playbook/`，采集 204 条结构化样本；产品判断更新为“以简历/项目经历驱动的连续追问 + 结构化挂点复盘”为 MVP 核心闭环。
+- 2026-05-10：完成第三轮需求验证和 research 总整合；早期输入确定为项目经历文本，后续已升级为简历上传/粘贴，产品形态确定为面试训练工作台。
 - 2026-05-10：完成最终调研报告与 LaTeX PDF，整合 456 条结构化研究输入，沉淀用户痛点、竞品缺口、优先级矩阵和 MVP 取舍。
 - 2026-05-10：完成 Agent 架构与产品设计调研；调研 OpenAI Agents SDK、Responses API、LangGraph、AutoGen、CrewAI、OASIS 等资料后，决定首版采用轻量状态机 workflow，不引入重型 agent 框架。
 - 2026-05-10：完成首版完整产品实现：后端 `/interview/message` workflow、前端面试训练工作台、Product Memo 草稿、Demo 视频脚本和自动化测试。
+- 2026-05-10：完成简历上传升级：新增 `/resume/extract`，支持 PDF/DOCX/TXT；前端改为上传/粘贴简历主流程；场景切换改为独立对话；默认模型切到 `deepseek-v4-pro`。

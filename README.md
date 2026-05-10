@@ -1,6 +1,6 @@
 # AI 模拟面试官
 
-面向中国本科生技术实习面试准备的 AI 模拟面试产品。用户粘贴项目经历后，AI 会围绕项目连续追问，并在结束后输出结构化复盘，指出最可能被问挂的点和下一轮行动。
+面向中国本科生技术实习面试准备的 AI 模拟面试产品。用户上传 PDF/DOCX/TXT 简历或粘贴简历文本后，AI 会围绕简历里的项目、技能和岗位目标连续追问，并在结束后输出结构化复盘，指出最可能被问挂的点和下一轮行动。
 
 当前公网 demo：
 
@@ -11,14 +11,16 @@ http://8.139.254.60:3000/
 ## 核心功能
 
 - 3 个训练场景：项目深挖压力面、后端八股项目化追问、RAG/Agent 项目真实性拷打。
-- 项目经历驱动：首版要求用户粘贴项目/简历片段，目标岗位可选。
+- 简历驱动：支持上传 PDF/DOCX/TXT，扫描 PDF 暂不做 OCR，可粘贴文本兜底。
+- 场景独立会话：同一份简历可以在不同训练场景中分别练习，切换场景不丢对话。
 - 连续追问：后端用轻量状态机控制 `opening -> followup -> completed`。
 - 结构化复盘：总评、最可能被问挂的 3 个点、维度反馈、下一轮行动、下一轮练习题。
+- 默认模型：DeepSeek `deepseek-v4-pro`，对该模型启用 thinking 和 high reasoning effort。
 - 部署简单：FastAPI + Vite/React + Docker Compose，浏览器只访问 `3000`，前端通过 `/api/*` 同源代理后端。
 
 ## 技术栈
 
-- 后端：FastAPI、OpenAI Python SDK、OpenAI-compatible Chat Completions。
+- 后端：FastAPI、OpenAI Python SDK、python-multipart、pypdf、python-docx。
 - 前端：Vite、React、TypeScript、react-markdown、lucide-react。
 - 测试：pytest、Playwright。
 - 部署：Docker Compose，前端 `3000`，后端 `8000`。
@@ -29,8 +31,11 @@ http://8.139.254.60:3000/
 | --- | --- |
 | `GET /health` | 后端健康检查 |
 | `GET /config` | 返回 provider/model/key 配置状态，不泄露 key |
+| `POST /resume/extract` | 上传并解析 PDF/DOCX/TXT 简历 |
 | `POST /chat` | 保留的兼容聊天接口 |
 | `POST /interview/message` | 面试训练主接口 |
+
+`POST /resume/extract` 使用 `multipart/form-data`，字段名为 `file`。
 
 `POST /interview/message` 请求示例：
 
@@ -40,7 +45,8 @@ http://8.139.254.60:3000/
   "phase": "opening",
   "round": 0,
   "max_rounds": 5,
-  "project_context": "我做了一个基于 RAG 的课程问答系统...",
+  "resume_text": "候选人简历：我做了一个基于 RAG 的课程问答系统...",
+  "resume_filename": "resume.pdf",
   "job_target": "AI 应用开发实习",
   "messages": []
 }
@@ -50,12 +56,12 @@ http://8.139.254.60:3000/
 
 ```json
 {
-  "reply": "你提到用了向量检索。请具体说一下 chunk 大小怎么定的？",
+  "reply": "简历里你写了 PDF 解析和 chunk 策略。请说明 chunk 大小、重叠长度和评估依据是怎么定的？",
   "phase": "followup",
   "round": 1,
   "max_rounds": 5,
   "is_complete": false,
-  "model": "deepseek-v4-flash"
+  "model": "deepseek-v4-pro"
 }
 ```
 
@@ -71,7 +77,7 @@ cp .env.example .env
 | --- | --- | --- |
 | `OPENAI_API_KEY` | OpenAI-compatible API Key | `sk-...` |
 | `OPENAI_BASE_URL` | OpenAI-compatible API 地址，默认 DeepSeek | `https://api.deepseek.com` |
-| `MODEL_NAME` | 模型名称 | `deepseek-v4-flash` |
+| `MODEL_NAME` | 模型名称 | `deepseek-v4-pro` |
 | `SYSTEM_PROMPT` | 兼容 `/chat` 的系统提示词 | `你是一个中文友好的助手...` |
 
 不要把真实 `.env` 提交到 Git。
@@ -87,7 +93,7 @@ python3 -m venv .venv
 pip install -r requirements-dev.txt
 export OPENAI_API_KEY="你的 key"
 export OPENAI_BASE_URL="https://api.deepseek.com"
-export MODEL_NAME="deepseek-v4-flash"
+export MODEL_NAME="deepseek-v4-pro"
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
@@ -168,7 +174,7 @@ curl http://8.139.254.60:3000/api/config
 curl http://8.139.254.60:3000/api/health
 curl -X POST http://8.139.254.60:3000/api/interview/message \
   -H "Content-Type: application/json" \
-  -d '{"scenario":"project_deep_dive","phase":"opening","round":0,"max_rounds":5,"project_context":"我做了一个基于 FastAPI、Redis 和向量检索的课程问答系统，负责后端接口、检索链路和部署。","job_target":"后端开发实习","messages":[]}'
+  -d '{"scenario":"rag_agent_review","phase":"opening","round":0,"max_rounds":5,"resume_text":"候选人简历：我做了一个基于 FastAPI、Milvus 和 RAG 的课程问答系统，负责 PDF 解析、chunk 策略、检索链路和部署。","resume_filename":"resume.txt","job_target":"AI 应用开发实习","messages":[]}'
 ```
 
 浏览器验收只依赖 `3000`。如果云服务器安全组单独放行了 `8000`，也可以直接检查 `http://8.139.254.60:8000/health`。
