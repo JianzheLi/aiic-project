@@ -37,3 +37,6 @@ venv/
 
 # Local fallback Git metadata used when .git is mounted read-only in this environment
 .git-data/
+
+# Local-only bulky research datasets. Commit synthesized findings, not raw desk-research JSON.
+target/research/demand-validation-desk-research/data/*.json
