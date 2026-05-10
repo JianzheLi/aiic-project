@@ -1,0 +1,11 @@
+\begin{figure}[H]
+            \centering
+            \begin{tikzpicture}[x=1cm,y=1cm]
+            \node[anchor=east] at (0,0.00) {AI应用/Infra};\fill[reportblue] (0.15,-0.17) rectangle (7.84,0.17);\node[anchor=west] at (7.94,0.00) {34};
+\node[anchor=east] at (0,-0.58) {算法/LLM};\fill[reportblue] (0.15,-0.75) rectangle (7.84,-0.41);\node[anchor=west] at (7.94,-0.58) {34};
+\node[anchor=east] at (0,-1.16) {前端/全栈};\fill[reportblue] (0.15,-1.33) rectangle (3.32,-0.99);\node[anchor=west] at (3.42,-1.16) {14};
+\node[anchor=east] at (0,-1.74) {后端};\fill[reportblue] (0.15,-1.91) rectangle (7.84,-1.57);\node[anchor=west] at (7.94,-1.74) {34};
+\node[anchor=east] at (0,-2.32) {通用痛点};\fill[reportblue] (0.15,-2.49) rectangle (9.65,-2.15);\node[anchor=west] at (9.75,-2.32) {42};
+            \end{tikzpicture}
+            \caption{第一轮小红书样本主题分布}
+            \end{figure}

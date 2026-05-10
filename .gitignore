@@ -40,3 +40,11 @@ venv/
 
 # Local-only bulky research datasets. Commit synthesized findings, not raw desk-research JSON.
 target/research/demand-validation-desk-research/data/*.json
+
+# LaTeX build cache for generated reports
+target/research/final-report/*.aux
+target/research/final-report/*.out
+target/research/final-report/*.fls
+target/research/final-report/*.fdb_latexmk
+target/research/final-report/*.xdv
+target/research/final-report/*.synctex.gz

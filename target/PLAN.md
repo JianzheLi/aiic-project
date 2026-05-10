@@ -48,6 +48,7 @@
 - [x] 提炼真实面试中的追问链和“拷打方式”，包括项目真实性、Redis/MySQL/MQ、性能压测、RAG/Agent、LLM 推理、LoRA、保研压力面等。
 - [x] 完成第三轮需求验证 desk research：补充 36 条项目/简历样本、50 条岗位 JD、8 个竞品/替代方案体验，详见 `target/research/demand-validation-desk-research/`。
 - [x] 完成三轮调研整合，详见 `target/research/synthesis.md`。
+- [x] 完成最终调研报告，包含 Markdown、LaTeX/PDF 和关键统计图，详见 `target/research/final-report/`。
 - [x] 提炼用户最常见的 3 个面试准备痛点。
 - [x] 判断这些痛点里哪一个最适合 16 小时内做出闭环。
 - [x] 找到 2-3 个竞品或替代方案，明确为什么直接用通用聊天机器人不够好，详见 `target/research/interview-questioning-playbook/competitor-notes.md`。
@@ -99,12 +100,13 @@
 ### 提交材料
 
 - [ ] 准备 Product Memo 草稿。
+- [x] 准备可作为 Product Memo 原料的调研报告：`target/research/final-report/ai-interviewer-research-report.md` 和 `target/research/final-report/ai-interviewer-research-report.pdf`。
 - [ ] 准备 3 分钟以内 Demo 视频脚本。
 - [ ] 提交 git commit 并 push 到远程仓库。
 
 ## Product Memo 素材池
 
-- 目标用户与核心痛点：基于三轮公开调研整合，详见 `target/research/synthesis.md`。
+- 目标用户与核心痛点：基于三轮公开调研整合，详见 `target/research/synthesis.md` 和 `target/research/final-report/ai-interviewer-research-report.md`。
 - 产品设计说明：强调窄场景、项目经历驱动、连续追问、结构化挂点复盘。
 - 版本迭代记录：从通用聊天样本到模拟面试官；后续每次关键变更继续记录。
 - 下一步设计：首版之后可选方向包括 JD 匹配、简历解析、语音练习、历史记录、个性化题库。
@@ -119,3 +121,4 @@
 - 2026-05-10：完成小红书公开内容调研，采集 158 条去重样本，其中核心岗位样本 144 条，综合结论沉淀到 `target/research/xhs-tech-intern-interviews/findings.md`。
 - 2026-05-10：完成第二轮广泛公开调研，建立 `target/research/interview-questioning-playbook/`，采集 204 条结构化样本；产品判断更新为“以项目经历驱动的连续追问 + 结构化挂点复盘”为 MVP 核心闭环。
 - 2026-05-10：完成第三轮需求验证和 research 总整合；首版输入确定为项目经历文本，JD 可选，产品形态确定为面试训练工作台。
+- 2026-05-10：完成最终调研报告与 LaTeX PDF，整合 456 条结构化研究输入，沉淀用户痛点、竞品缺口、优先级矩阵和 MVP 取舍。

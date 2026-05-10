@@ -1,0 +1,16 @@
+\begin{figure}[H]
+            \centering
+            \begin{tikzpicture}[x=1cm,y=1cm]
+            \node[anchor=east] at (0,0.00) {AI应用};\fill[reportblue] (0.15,-0.17) rectangle (9.65,0.17);\node[anchor=west] at (9.75,0.00) {53};
+\node[anchor=east] at (0,-0.58) {面试官样本};\fill[reportblue] (0.15,-0.75) rectangle (9.65,-0.41);\node[anchor=west] at (9.75,-0.58) {53};
+\node[anchor=east] at (0,-1.16) {算法手撕};\fill[reportblue] (0.15,-1.33) rectangle (5.53,-0.99);\node[anchor=west] at (5.63,-1.16) {30};
+\node[anchor=east] at (0,-1.74) {开源题库};\fill[reportblue] (0.15,-1.91) rectangle (4.45,-1.57);\node[anchor=west] at (4.55,-1.74) {24};
+\node[anchor=east] at (0,-2.32) {后端追问};\fill[reportblue] (0.15,-2.49) rectangle (3.02,-2.15);\node[anchor=west] at (3.12,-2.32) {16};
+\node[anchor=east] at (0,-2.90) {面试官视角};\fill[reportblue] (0.15,-3.07) rectangle (2.12,-2.73);\node[anchor=west] at (2.22,-2.90) {11};
+\node[anchor=east] at (0,-3.48) {老师/老板};\fill[reportblue] (0.15,-3.65) rectangle (1.40,-3.31);\node[anchor=west] at (1.50,-3.48) {7};
+\node[anchor=east] at (0,-4.06) {AI Infra};\fill[reportblue] (0.15,-4.23) rectangle (1.05,-3.89);\node[anchor=west] at (1.15,-4.06) {5};
+\node[anchor=east] at (0,-4.64) {LLM算法};\fill[reportblue] (0.15,-4.81) rectangle (0.69,-4.47);\node[anchor=west] at (0.79,-4.64) {3};
+\node[anchor=east] at (0,-5.22) {前端/全栈};\fill[reportblue] (0.15,-5.39) rectangle (0.51,-5.05);\node[anchor=west] at (0.61,-5.22) {2};
+            \end{tikzpicture}
+            \caption{第二轮追问链样本主题分布}
+            \end{figure}

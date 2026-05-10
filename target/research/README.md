@@ -6,6 +6,7 @@
 - `interview-questioning-playbook/`：第二轮广泛公开来源调研，提炼面试官追问链、八股/专项图谱和竞品初步观察。
 - `demand-validation-desk-research/`：第三轮需求验证 desk research，补项目样本、岗位 JD 和竞品体验。
 - `synthesis.md`：三轮研究整合结论，直接服务产品设计、Product Memo 和实现取舍。
+- `final-report/`：最终调研报告材料，包含 Markdown 报告、LaTeX 源文件、PDF 和统计图生成脚本。
 
 ## 当前产品判断
 

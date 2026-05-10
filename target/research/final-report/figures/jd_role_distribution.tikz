@@ -1,0 +1,16 @@
+\begin{figure}[H]
+            \centering
+            \begin{tikzpicture}[x=1cm,y=1cm]
+            \node[anchor=east] at (0,0.00) {AI应用};\fill[reportblue] (0.15,-0.17) rectangle (4.90,0.17);\node[anchor=west] at (5.00,0.00) {7};
+\node[anchor=east] at (0,-0.58) {AI全栈};\fill[reportblue] (0.15,-0.75) rectangle (0.83,-0.41);\node[anchor=west] at (0.93,-0.58) {1};
+\node[anchor=east] at (0,-1.16) {AI后端};\fill[reportblue] (0.15,-1.33) rectangle (4.90,-0.99);\node[anchor=west] at (5.00,-1.16) {7};
+\node[anchor=east] at (0,-1.74) {AI Infra};\fill[reportblue] (0.15,-1.91) rectangle (3.54,-1.57);\node[anchor=west] at (3.64,-1.74) {5};
+\node[anchor=east] at (0,-2.32) {算法};\fill[reportblue] (0.15,-2.49) rectangle (2.19,-2.15);\node[anchor=west] at (2.29,-2.32) {3};
+\node[anchor=east] at (0,-2.90) {LLM算法};\fill[reportblue] (0.15,-3.07) rectangle (9.65,-2.73);\node[anchor=west] at (9.75,-2.90) {14};
+\node[anchor=east] at (0,-3.48) {后端};\fill[reportblue] (0.15,-3.65) rectangle (4.90,-3.31);\node[anchor=west] at (5.00,-3.48) {7};
+\node[anchor=east] at (0,-4.06) {数据后端};\fill[reportblue] (0.15,-4.23) rectangle (2.86,-3.89);\node[anchor=west] at (2.96,-4.06) {4};
+\node[anchor=east] at (0,-4.64) {平台后端};\fill[reportblue] (0.15,-4.81) rectangle (0.83,-4.47);\node[anchor=west] at (0.93,-4.64) {1};
+\node[anchor=east] at (0,-5.22) {LLM应用};\fill[reportblue] (0.15,-5.39) rectangle (0.83,-5.05);\node[anchor=west] at (0.93,-5.22) {1};
+            \end{tikzpicture}
+            \caption{第三轮岗位 JD 方向分布}
+            \end{figure}

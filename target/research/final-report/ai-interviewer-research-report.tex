@@ -1,0 +1,221 @@
+\documentclass[UTF8,11pt]{ctexart}
+\usepackage[a4paper,margin=2.3cm]{geometry}
+\usepackage{hyperref}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{tikz}
+\usepackage{float}
+\usepackage{placeins}
+\usetikzlibrary{positioning}
+\definecolor{reportblue}{HTML}{2563EB}
+\definecolor{reportgreen}{HTML}{059669}
+\definecolor{reportred}{HTML}{DC2626}
+\hypersetup{colorlinks=true,linkcolor=reportblue,urlcolor=reportblue,hypertexnames=false}
+\setlist[itemize]{leftmargin=1.5em}
+\setlist[enumerate]{leftmargin=1.7em}
+\title{AI 模拟面试官用户痛点与需求调研报告}
+\author{AIIC Project}
+\date{2026-05-10}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+本报告整合三轮公开调研，共计 456 条结构化研究输入。结论是：目标用户不缺题库和资料，缺的是能围绕自己项目连续追问、暴露真实挂点并给出结构化复盘的训练产品。首版应聚焦中国本科生技术实习面试准备，以项目经历输入、三类训练场景、3--5 轮追问和挂点复盘作为核心闭环。
+\end{abstract}
+
+\section{执行摘要}
+
+我们不应该做泛用 AI 聊天，也不应该做完整题库平台；应该做一个面向中国本科生技术实习的项目经历驱动型 AI 模拟面试官，用连续追问暴露项目、八股和 AI 专项里的真实挂点。
+
+\input{figures/sample_coverage.tikz}
+\FloatBarrier
+
+\section{调研方法与样本边界}
+
+本次调研采用三阶段 desk research。挑战窗口只有 16 小时，真实访谈的招募和整理成本过高；公开面经、岗位 JD、开源项目和竞品体验已经足以支撑 MVP 阶段的产品判断。
+
+\begin{longtable}{p{0.55\linewidth}r}
+\toprule
+样本类型 & 数量 \\
+\midrule
+\endfirsthead
+\toprule
+样本类型 & 数量 \\
+\midrule
+\endhead
+小红书面经 & 158 \\
+追问链样本 & 204 \\
+项目样本 & 36 \\
+岗位JD & 50 \\
+竞品体验 & 8 \\
+\bottomrule
+\end{longtable}
+
+样本边界包括：不记录 cookie、token 或个人隐私；第三轮原始 JSON 只保留本地，不进入 Git；本报告用于 Product Memo 和产品设计输入，不声称具备统计学意义上的总体代表性。
+\begin{itemize}
+\item 第一轮用于验证真实用户表达和痛点强度，重点看候选人如何描述被追问、被拷打和复盘困难。
+\item 第二轮用于提炼面试官视角和追问链，重点看问题如何从项目、八股、算法和 AI 专项逐步加压。
+\item 第三轮用于需求验证，重点看项目样本、岗位 JD 和竞品体验能否支持一个窄而深的 MVP。
+\end{itemize}
+
+\section{目标用户画像}
+
+首版目标用户是准备互联网大厂或 AI 相关技术实习面试的中国本科生，尤其是有项目但不确定能否经得起追问、正在背八股但不会和项目结合、做过 RAG/Agent/LLM demo 但担心被问“是不是只调 API”的学生。
+\begin{itemize}
+\item 已经有一个或多个项目，但不确定项目背景、个人贡献、指标和失败路径是否能讲清。
+\item 正在背 Java、MySQL、Redis、MQ、计网、操作系统等基础知识，但缺少项目化迁移训练。
+\item 做过 RAG、Agent、LLM Chatbot 或 AI 全栈应用，但担心被问到数据来源、评估、成本和部署细节。
+\item 看过大量面经，却无法判断自己真实挂点在知识、表达、项目可信度还是承压表现。
+\end{itemize}
+
+\section{用户痛点分析}
+
+\input{figures/pain_tag_distribution.tikz}
+\FloatBarrier
+
+公开样本显示，用户的痛点不是“没有题”，而是训练方式无法逼近真实面试。真实面试不是静态问答，而是一个压力逐步加深的过程：从自我介绍或项目开始，抓住一个技术词、指标或项目描述，不断追问为什么、怎么验证、失败怎么办、换约束怎么办。
+
+\subsection{项目深挖崩盘}
+候选人经常能讲清功能，却讲不清个人贡献、技术取舍、指标、失败路径和真实修改。这直接决定首版产品不应先让用户选题库，而应先让用户粘贴项目经历。
+\begin{itemize}
+\item 典型挂点包括：项目背景过于模板化、个人贡献不清、指标缺失、压测和上线证据不足。
+\item 面试官常见追问是：为什么这样设计，替代方案是什么，失败时如何定位，数据量增长后怎么办。
+\item 产品含义是：项目输入必须成为训练入口，追问必须沿着用户自己的技术栈展开。
+\end{itemize}
+
+\subsection{八股与项目割裂}
+Java、MySQL、Redis、MQ、计网、操作系统仍然高频出现，但它们在真实面试中通常由项目牵出。八股应该作为项目深挖的追问工具，而不是独立背诵模块。
+\begin{itemize}
+\item Redis 不是只问数据结构，而是问缓存一致性、击穿、穿透、雪崩、降级和 key 设计。
+\item MySQL 不是只问索引定义，而是问慢 SQL、Explain、锁、MVCC、数据量增长后的拆分。
+\item MQ 不是只问模型，而是问发送失败、消费失败、幂等、顺序性和消息堆积排查。
+\end{itemize}
+
+\subsection{AI 项目可信度风险}
+RAG、Agent、LLM 应用已经成为高频项目包装方向，但面试会追到数据来源、切块、检索、工具调用、评估、部署和失败归因。首版必须保留 RAG/Agent 项目真实性拷打场景。
+\begin{itemize}
+\item RAG 会被追问数据来源、清洗、chunk 策略、embedding、rerank、评估集和坏例归因。
+\item Agent 会被追问任务规划、工具调用、状态/记忆、失败重试、日志回放和权限边界。
+\item 如果用户只会说“调 API”，项目很容易被判定为包装；产品需要提前暴露这种风险。
+\end{itemize}
+
+\subsection{复盘不可执行}
+用户能记录面试题，却不知道自己究竟挂在项目可信度、专业深度、表达结构、工程闭环还是承压表现。因此产品反馈必须结构化。
+\begin{itemize}
+\item 只给“表达不清楚”或“基础不扎实”没有训练价值，用户需要知道下一轮该补什么。
+\item 反馈维度应至少覆盖项目可信度、专业深度、表达结构、工程闭环、承压表现和下一步行动。
+\item 这类复盘适合由 AI 产品承接，因为它可以在每轮回答后保留上下文并总结模式化问题。
+\end{itemize}
+
+\section{岗位与项目需求验证}
+
+\input{figures/jd_role_distribution.tikz}
+\FloatBarrier
+
+\begin{longtable}{p{0.62\linewidth}r}
+\toprule
+JD 方向 & 样本数 \\
+\midrule
+\endfirsthead
+\toprule
+JD 方向 & 样本数 \\
+\midrule
+\endhead
+AI应用 & 7 \\
+AI全栈 & 1 \\
+AI后端 & 7 \\
+AI Infra & 5 \\
+算法 & 3 \\
+LLM算法 & 14 \\
+后端 & 7 \\
+数据后端 & 4 \\
+平台后端 & 1 \\
+LLM应用 & 1 \\
+\bottomrule
+\end{longtable}
+
+JD 能力要求可以压缩为三类：后端工程能力、AI 应用能力、大模型/AI Infra 能力。项目样本也呈现同质化风险：后台管理、商城、秒杀、RAG、Agent、知识库问答最常见，最容易被问的是“你真正做了什么”和“怎么证明有效”。
+\begin{enumerate}
+\item 后端工程能力：接口设计、数据库、Redis、MQ、服务部署、日志、稳定性和排障。
+\item AI 应用能力：RAG、Agent、Prompt、OpenAI-compatible API、服务化部署、延迟和成本控制。
+\item 大模型/AI Infra 能力：Transformer、LoRA/PEFT、vLLM、KV Cache、GPU/K8s 和推理性能。
+\end{enumerate}
+
+\input{figures/project_archetype_risk_matrix.tikz}
+\FloatBarrier
+
+\section{面试追问模式}
+
+真实面试问题可以抽象为追问链：项目真实性链、Redis 链、MySQL 链、MQ 链、RAG 链、Agent 链。每条链都从“你做了什么”追到“为什么、失败怎么办、怎么验证、换约束怎么办”。
+\begin{itemize}
+\item 项目真实性链：项目背景 -> 个人贡献 -> 技术取舍 -> 指标 -> 失败路径。
+\item Redis 链：使用场景 -> key 设计 -> 缓存一致性 -> 击穿/穿透/雪崩 -> 降级。
+\item MySQL 链：慢 SQL -> 索引 -> Explain -> 锁/MVCC -> 数据量增长后的方案。
+\item MQ 链：为什么引入 -> 发送失败 -> 消费失败 -> 幂等 -> 顺序性 -> 堆积排查。
+\item RAG 链：数据来源 -> 切块 -> 检索 -> rerank -> 评估 -> 坏例归因。
+\item Agent 链：任务规划 -> 工具调用 -> 状态/记忆 -> 失败重试 -> 日志回放。
+\end{itemize}
+
+\input{figures/questioning_category_distribution.tikz}
+\FloatBarrier
+
+\section{竞品与替代方案缺口}
+
+\input{figures/competitor_gap_matrix.tikz}
+\FloatBarrier
+
+通用聊天机器人能解释概念和生成题目，但不会稳定主动追问；海外 AI mock interview 偏英语和海外岗位；题库平台资料丰富但不能针对用户项目复盘；开源 AI 面试项目多数偏通用 mock 或招聘工具。本项目的差异化是中文技术实习语境下的项目驱动追问和挂点复盘。
+\begin{itemize}
+\item 通用 LLM 的问题是太听话，用户回答浅时也容易继续解释概念，而不是持续追问漏洞。
+\item 题库和面经平台的问题是资料丰富但训练闭环弱，用户仍需要自己筛题、模拟和复盘。
+\item 海外 mock interview 产品的问题是岗位、语言和评估语境不匹配中国本科生技术实习。
+\item 开源项目的参考价值在工程形态，产品定位上仍需要重新收敛到项目深挖训练。
+\end{itemize}
+
+\section{需要解决的问题与优先级}
+
+\input{figures/problem_priority_matrix.tikz}
+\FloatBarrier
+
+优先级最高的问题是：用户项目经不起连续追问、用户不知道自己回答挂在哪里、八股和专项知识无法迁移到项目场景、RAG/Agent 等 AI 项目容易被认为只是包装。
+\begin{enumerate}
+\item 用户项目经不起连续追问：这是最强痛点，也是最容易通过 AI 面试官闭环体现差异化的问题。
+\item 用户不知道自己回答挂在哪里：这是复用和留存的关键，必须以结构化反馈输出。
+\item 八股和专项知识无法迁移到项目场景：首版不做题库，但要把高频八股嵌入项目追问。
+\item RAG/Agent 项目容易被认为只是包装：这是 AI 方向学生的显著风险，适合作为特色场景。
+\end{enumerate}
+
+对应的 MVP 需求是：项目经历输入、三个训练场景、每次 3--5 轮连续追问、结束后输出总评、风险点、项目可信度、专业深度、表达结构、工程闭环、承压表现和下一轮练习题。
+
+\section{产品取舍}
+
+首版应该做文字交互、项目经历输入、场景选择、连续追问和结构化挂点复盘。不做登录、数据库、语音、视频、完整简历解析、题库浏览器和复杂招聘 pipeline。
+\begin{itemize}
+\item 应该做：文字交互、项目经历/简历片段输入、场景选择、AI 面试官连续追问、结构化挂点复盘。
+\item 暂不做：登录、数据库、历史记录、语音、视频、完整简历解析、题库浏览器、复杂招聘 pipeline。
+\item 取舍理由：挑战时间有限，评分重点是目标用户理解和核心闭环，不是功能数量。
+\end{itemize}
+
+\section{Product Memo 可复用段落}
+
+我们观察到，中国本科生在技术实习面试准备中并不缺题目和资料，真正缺的是低成本、高频、接近真实面试的连续追问训练。公开面经和面试官视角都显示，真实面试往往从项目经历切入，再追问技术选型、失败路径、指标验证和迁移能力。通用聊天机器人可以解释概念，却不会稳定地抓住用户回答里的漏洞并持续追问；题库平台资料丰富，但无法针对用户自己的项目做动态复盘。因此，我们把 MVP 聚焦在“项目经历驱动的 AI 模拟面试官”：用户粘贴项目经历后，AI 连续追问并在结束后输出结构化挂点复盘，帮助用户知道下一轮到底该补项目细节、专业知识、表达结构还是工程闭环。
+
+\section{附录：关键公开来源示例}
+\begin{itemize}
+\item JavaGuide：\url{https://javaguide.cn/}
+\item CS-Notes：\url{https://github.com/CyC2018/CS-Notes}
+\item doocs/advanced-java：\url{https://github.com/doocs/advanced-java}
+\item Doocs LeetCode：\url{https://leetcode.doocs.org/}
+\item AgentGuide：\url{https://github.com/adongwanai/AgentGuide}
+\item vLLM：\url{https://github.com/vllm-project/vllm}
+\item Dify：\url{https://github.com/langgenius/dify}
+\item RAGFlow：\url{https://github.com/infiniflow/ragflow}
+\item interviewing.io：\url{https://interviewing.io/}
+\item Steo AI：\url{https://steo.ai/}
+\end{itemize}
+
+\end{document}

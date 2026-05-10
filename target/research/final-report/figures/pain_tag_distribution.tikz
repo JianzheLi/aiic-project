@@ -1,0 +1,14 @@
+\begin{figure}[H]
+            \centering
+            \begin{tikzpicture}[x=1cm,y=1cm]
+            \node[anchor=east] at (0,0.00) {项目深挖};\fill[reportblue] (0.15,-0.17) rectangle (9.65,0.17);\node[anchor=west] at (9.75,0.00) {114};
+\node[anchor=east] at (0,-0.58) {八股基础};\fill[reportblue] (0.15,-0.75) rectangle (8.07,-0.41);\node[anchor=west] at (8.17,-0.58) {95};
+\node[anchor=east] at (0,-1.16) {算法/手撕};\fill[reportblue] (0.15,-1.33) rectangle (7.82,-0.99);\node[anchor=west] at (7.92,-1.16) {92};
+\node[anchor=east] at (0,-1.74) {LLM专项};\fill[reportblue] (0.15,-1.91) rectangle (5.73,-1.57);\node[anchor=west] at (5.83,-1.74) {67};
+\node[anchor=east] at (0,-2.32) {追问压力};\fill[reportblue] (0.15,-2.49) rectangle (5.73,-2.15);\node[anchor=west] at (5.83,-2.32) {67};
+\node[anchor=east] at (0,-2.90) {焦虑/不确定};\fill[reportblue] (0.15,-3.07) rectangle (4.15,-2.73);\node[anchor=west] at (4.25,-2.90) {48};
+\node[anchor=east] at (0,-3.48) {复盘缺口};\fill[reportblue] (0.15,-3.65) rectangle (2.32,-3.31);\node[anchor=west] at (2.42,-3.48) {26};
+\node[anchor=east] at (0,-4.06) {工程真实性};\fill[reportblue] (0.15,-4.23) rectangle (0.90,-3.89);\node[anchor=west] at (1.00,-4.06) {9};
+            \end{tikzpicture}
+            \caption{公开样本中的用户痛点标签分布}
+            \end{figure}

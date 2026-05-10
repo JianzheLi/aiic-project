@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="392" viewBox="0 0 980 392">
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="490.0" y="35" text-anchor="middle" font-size="22" font-weight="700" fill="#111827">替代方案能力矩阵</text>
+<text x="269.0" y="70" text-anchor="middle" font-size="13" fill="#374151">连续追问</text>
+<text x="387.0" y="70" text-anchor="middle" font-size="13" fill="#374151">项目深挖</text>
+<text x="505.0" y="70" text-anchor="middle" font-size="13" fill="#374151">结构化反馈</text>
+<text x="623.0" y="70" text-anchor="middle" font-size="13" fill="#374151">中文技术实习</text>
+<text x="196" y="123.6" text-anchor="end" font-size="14" fill="#374151">通用LLM</text>
+<rect x="210" y="90" width="115" height="55" fill="#2563eb" opacity="0.43"/>
+<text x="269.0" y="124.8" text-anchor="middle" font-size="16" font-weight="700" fill="#111827">2</text>
+<rect x="328" y="90" width="115" height="55" fill="#2563eb" opacity="0.28"/>
+<text x="387.0" y="124.8" text-anchor="middle" font-size="16" font-weight="700" fill="#111827">1</text>
+<rect x="446" y="90" width="115" height="55" fill="#2563eb" opacity="0.43"/>
+<text x="505.0" y="124.8" text-anchor="middle" font-size="16" font-weight="700" fill="#111827">2</text>
+<rect x="564" y="90" width="115" height="55" fill="#2563eb" opacity="0.43"/>
+<text x="623.0" y="124.8" text-anchor="middle" font-size="16" font-weight="700" fill="#111827">2</text>
+<text x="196" y="181.6" text-anchor="end" font-size="14" fill="#374151">AI面试产品</text>
+<rect x="210" y="148" width="115" height="55" fill="#2563eb" opacity="0.74"/>
+<text x="269.0" y="182.8" text-anchor="middle" font-size="16" font-weight="700" fill="#111827">4</text>
+<rect x="328" y="148" width="115" height="55" fill="#2563eb" opacity="0.43"/>
+<text x="387.0" y="182.8" text-anchor="middle" font-size="16" font-weight="700" fill="#111827">2</text>
+<rect x="446" y="148" width="115" height="55" fill="#2563eb" opacity="0.74"/>
+<text x="505.0" y="182.8" text-anchor="middle" font-size="16" font-weight="700" fill="#111827">4</text>
+<rect x="564" y="148" width="115" height="55" fill="#2563eb" opacity="0.28"/>
+<text x="623.0" y="182.8" text-anchor="middle" font-size="16" font-weight="700" fill="#111827">1</text>
+<text x="196" y="239.6" text-anchor="end" font-size="14" fill="#374151">题库/面经</text>
+<rect x="210" y="206" width="115" height="55" fill="#2563eb" opacity="0.12"/>
+<text x="269.0" y="240.8" text-anchor="middle" font-size="16" font-weight="700" fill="#111827">0</text>
+<rect x="328" y="206" width="115" height="55" fill="#2563eb" opacity="0.28"/>
+<text x="387.0" y="240.8" text-anchor="middle" font-size="16" font-weight="700" fill="#111827">1</text>
+<rect x="446" y="206" width="115" height="55" fill="#2563eb" opacity="0.28"/>
+<text x="505.0" y="240.8" text-anchor="middle" font-size="16" font-weight="700" fill="#111827">1</text>
+<rect x="564" y="206" width="115" height="55" fill="#2563eb" opacity="0.90"/>
+<text x="623.0" y="240.8" text-anchor="middle" font-size="16" font-weight="700" fill="#111827">5</text>
+<text x="196" y="297.6" text-anchor="end" font-size="14" fill="#374151">开源项目</text>
+<rect x="210" y="264" width="115" height="55" fill="#2563eb" opacity="0.43"/>
+<text x="269.0" y="298.8" text-anchor="middle" font-size="16" font-weight="700" fill="#111827">2</text>
+<rect x="328" y="264" width="115" height="55" fill="#2563eb" opacity="0.43"/>
+<text x="387.0" y="298.8" text-anchor="middle" font-size="16" font-weight="700" fill="#111827">2</text>
+<rect x="446" y="264" width="115" height="55" fill="#2563eb" opacity="0.43"/>
+<text x="505.0" y="298.8" text-anchor="middle" font-size="16" font-weight="700" fill="#111827">2</text>
+<rect x="564" y="264" width="115" height="55" fill="#2563eb" opacity="0.28"/>
+<text x="623.0" y="298.8" text-anchor="middle" font-size="16" font-weight="700" fill="#111827">1</text>
+</svg>

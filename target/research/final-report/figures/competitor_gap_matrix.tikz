@@ -1,0 +1,46 @@
+\begin{figure}[H]
+            \centering
+            \begin{tikzpicture}[x=1cm,y=1cm]
+            \node[rotate=30,anchor=west] at (1.20,0.45) {连续追问};
+\node[rotate=30,anchor=west] at (2.20,0.45) {项目深挖};
+\node[rotate=30,anchor=west] at (3.20,0.45) {结构化反馈};
+\node[rotate=30,anchor=west] at (4.20,0.45) {中文技术实习};
+\node[anchor=east] at (0,0.00) {通用LLM};
+\fill[reportblue!38] (0.55,-0.28) rectangle (1.17,0.28);
+\node at (0.86,0.00) {2};
+\fill[reportblue!24] (1.55,-0.28) rectangle (2.17,0.28);
+\node at (1.86,0.00) {1};
+\fill[reportblue!38] (2.55,-0.28) rectangle (3.17,0.28);
+\node at (2.86,0.00) {2};
+\fill[reportblue!38] (3.55,-0.28) rectangle (4.17,0.28);
+\node at (3.86,0.00) {2};
+\node[anchor=east] at (0,-0.72) {AI面试产品};
+\fill[reportblue!66] (0.55,-1.00) rectangle (1.17,-0.44);
+\node at (0.86,-0.72) {4};
+\fill[reportblue!38] (1.55,-1.00) rectangle (2.17,-0.44);
+\node at (1.86,-0.72) {2};
+\fill[reportblue!66] (2.55,-1.00) rectangle (3.17,-0.44);
+\node at (2.86,-0.72) {4};
+\fill[reportblue!24] (3.55,-1.00) rectangle (4.17,-0.44);
+\node at (3.86,-0.72) {1};
+\node[anchor=east] at (0,-1.44) {题库/面经};
+\fill[reportblue!10] (0.55,-1.72) rectangle (1.17,-1.16);
+\node at (0.86,-1.44) {0};
+\fill[reportblue!24] (1.55,-1.72) rectangle (2.17,-1.16);
+\node at (1.86,-1.44) {1};
+\fill[reportblue!24] (2.55,-1.72) rectangle (3.17,-1.16);
+\node at (2.86,-1.44) {1};
+\fill[reportblue!80] (3.55,-1.72) rectangle (4.17,-1.16);
+\node at (3.86,-1.44) {5};
+\node[anchor=east] at (0,-2.16) {开源项目};
+\fill[reportblue!38] (0.55,-2.44) rectangle (1.17,-1.88);
+\node at (0.86,-2.16) {2};
+\fill[reportblue!38] (1.55,-2.44) rectangle (2.17,-1.88);
+\node at (1.86,-2.16) {2};
+\fill[reportblue!38] (2.55,-2.44) rectangle (3.17,-1.88);
+\node at (2.86,-2.16) {2};
+\fill[reportblue!24] (3.55,-2.44) rectangle (4.17,-1.88);
+\node at (3.86,-2.16) {1};
+            \end{tikzpicture}
+            \caption{替代方案能力矩阵}
+            \end{figure}

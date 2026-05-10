@@ -1,0 +1,66 @@
+\begin{figure}[H]
+            \centering
+            \begin{tikzpicture}[x=1cm,y=1cm]
+            \node[rotate=30,anchor=west] at (1.20,0.45) {同质化};
+\node[rotate=30,anchor=west] at (2.20,0.45) {个人贡献};
+\node[rotate=30,anchor=west] at (3.20,0.45) {指标缺失};
+\node[rotate=30,anchor=west] at (4.20,0.45) {失败路径};
+\node[rotate=30,anchor=west] at (5.20,0.45) {岗位匹配};
+\node[anchor=east] at (0,0.00) {管理/商城/秒杀};
+\fill[reportblue!80] (0.55,-0.28) rectangle (1.17,0.28);
+\node at (0.86,0.00) {5};
+\fill[reportblue!66] (1.55,-0.28) rectangle (2.17,0.28);
+\node at (1.86,0.00) {4};
+\fill[reportblue!66] (2.55,-0.28) rectangle (3.17,0.28);
+\node at (2.86,0.00) {4};
+\fill[reportblue!66] (3.55,-0.28) rectangle (4.17,0.28);
+\node at (3.86,0.00) {4};
+\fill[reportblue!52] (4.55,-0.28) rectangle (5.17,0.28);
+\node at (4.86,0.00) {3};
+\node[anchor=east] at (0,-0.72) {RAG/知识库};
+\fill[reportblue!66] (0.55,-1.00) rectangle (1.17,-0.44);
+\node at (0.86,-0.72) {4};
+\fill[reportblue!66] (1.55,-1.00) rectangle (2.17,-0.44);
+\node at (1.86,-0.72) {4};
+\fill[reportblue!80] (2.55,-1.00) rectangle (3.17,-0.44);
+\node at (2.86,-0.72) {5};
+\fill[reportblue!80] (3.55,-1.00) rectangle (4.17,-0.44);
+\node at (3.86,-0.72) {5};
+\fill[reportblue!80] (4.55,-1.00) rectangle (5.17,-0.44);
+\node at (4.86,-0.72) {5};
+\node[anchor=east] at (0,-1.44) {Agent/Workflow};
+\fill[reportblue!52] (0.55,-1.72) rectangle (1.17,-1.16);
+\node at (0.86,-1.44) {3};
+\fill[reportblue!80] (1.55,-1.72) rectangle (2.17,-1.16);
+\node at (1.86,-1.44) {5};
+\fill[reportblue!66] (2.55,-1.72) rectangle (3.17,-1.16);
+\node at (2.86,-1.44) {4};
+\fill[reportblue!80] (3.55,-1.72) rectangle (4.17,-1.16);
+\node at (3.86,-1.44) {5};
+\fill[reportblue!80] (4.55,-1.72) rectangle (5.17,-1.16);
+\node at (4.86,-1.44) {5};
+\node[anchor=east] at (0,-2.16) {AI Infra};
+\fill[reportblue!38] (0.55,-2.44) rectangle (1.17,-1.88);
+\node at (0.86,-2.16) {2};
+\fill[reportblue!66] (1.55,-2.44) rectangle (2.17,-1.88);
+\node at (1.86,-2.16) {4};
+\fill[reportblue!80] (2.55,-2.44) rectangle (3.17,-1.88);
+\node at (2.86,-2.16) {5};
+\fill[reportblue!66] (3.55,-2.44) rectangle (4.17,-1.88);
+\node at (3.86,-2.16) {4};
+\fill[reportblue!66] (4.55,-2.44) rectangle (5.17,-1.88);
+\node at (4.86,-2.16) {4};
+\node[anchor=east] at (0,-2.88) {科研/算法};
+\fill[reportblue!52] (0.55,-3.16) rectangle (1.17,-2.60);
+\node at (0.86,-2.88) {3};
+\fill[reportblue!66] (1.55,-3.16) rectangle (2.17,-2.60);
+\node at (1.86,-2.88) {4};
+\fill[reportblue!66] (2.55,-3.16) rectangle (3.17,-2.60);
+\node at (2.86,-2.88) {4};
+\fill[reportblue!52] (3.55,-3.16) rectangle (4.17,-2.60);
+\node at (3.86,-2.88) {3};
+\fill[reportblue!66] (4.55,-3.16) rectangle (5.17,-2.60);
+\node at (4.86,-2.88) {4};
+            \end{tikzpicture}
+            \caption{项目类型与被问穿风险矩阵}
+            \end{figure}
