@@ -74,6 +74,8 @@
 - [x] 产品第一屏改成“面试训练工作台”，不是普通聊天页。
 - [x] Demo 视频前 30 秒的 wow moment：用户贴一段项目经历后，AI 抓住技术栈连续追问，并指出最可能被问挂的点。
 - [x] 首版明确不做：登录、数据库、语音、视频、完整题库浏览器、复杂招聘 pipeline。
+- [x] 完成 Agent 架构与产品设计调研，详见 `target/agent-architecture-design/`。
+- [x] 首版架构确定为“轻量状态机 workflow + 场景化 prompt pack + 结构化复盘”，不引入 LangGraph、AutoGen、CrewAI 或 OpenAI Agents SDK 作为运行时依赖。
 
 ### MVP 方向草案
 
@@ -91,6 +93,7 @@
 - [x] 保存原始挑战说明到 `target/`。
 - [x] 建立显式计划文档。
 - [x] 确定第一个窄目标用户和面试场景：准备互联网大厂技术实习面试的中国本科生。
+- [x] 完成实现设计：新增 `/interview/message`，保留 `/chat`、`/config`、`/health`，详见 `target/agent-architecture-design/implementation-design.md`。
 - [ ] 改造前端，从通用聊天 demo 变成模拟面试训练界面。
 - [ ] 改造后端系统提示词和返回逻辑，支持面试追问与结构化反馈。
 - [ ] 补充 README 的产品定位、运行方式、技术栈和提交说明。
@@ -107,9 +110,9 @@
 ## Product Memo 素材池
 
 - 目标用户与核心痛点：基于三轮公开调研整合，详见 `target/research/synthesis.md` 和 `target/research/final-report/ai-interviewer-research-report.md`。
-- 产品设计说明：强调窄场景、项目经历驱动、连续追问、结构化挂点复盘。
+- 产品设计说明：强调窄场景、项目经历驱动、连续追问、结构化挂点复盘；完整设计见 `target/agent-architecture-design/design-proposal.md`。
 - 版本迭代记录：从通用聊天样本到模拟面试官；后续每次关键变更继续记录。
-- 下一步设计：首版之后可选方向包括 JD 匹配、简历解析、语音练习、历史记录、个性化题库。
+- 下一步设计：首版之后可选方向包括 JD 匹配、简历解析、语音练习、历史记录、个性化题库；需要 tools/session/tracing 时再考虑 OpenAI Agents SDK，需要长期状态和 human-in-the-loop 时再考虑 LangGraph。
 - AI 工具使用：Codex 用于代码理解、计划维护、实现和调试；LLM API 用于面试官能力。
 
 ## 决策记录
@@ -122,3 +125,4 @@
 - 2026-05-10：完成第二轮广泛公开调研，建立 `target/research/interview-questioning-playbook/`，采集 204 条结构化样本；产品判断更新为“以项目经历驱动的连续追问 + 结构化挂点复盘”为 MVP 核心闭环。
 - 2026-05-10：完成第三轮需求验证和 research 总整合；首版输入确定为项目经历文本，JD 可选，产品形态确定为面试训练工作台。
 - 2026-05-10：完成最终调研报告与 LaTeX PDF，整合 456 条结构化研究输入，沉淀用户痛点、竞品缺口、优先级矩阵和 MVP 取舍。
+- 2026-05-10：完成 Agent 架构与产品设计调研；调研 OpenAI Agents SDK、Responses API、LangGraph、AutoGen、CrewAI、OASIS 等资料后，决定首版采用轻量状态机 workflow，不引入重型 agent 框架。
