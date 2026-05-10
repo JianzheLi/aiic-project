@@ -26,6 +26,7 @@ DEFAULT_MODEL = "deepseek-v4-pro"
 DEFAULT_SYSTEM_PROMPT = "你是一个中文友好的 AI Agent 产品挑战助手，回答要清晰、务实、可执行。"
 DEFAULT_MAX_RESUME_BYTES = 25 * 1024 * 1024
 MAX_RESUME_CHARS = 20000
+MIN_RESUME_TEXT_CHARS = 30
 
 Scenario = Literal["project_deep_dive", "backend_fundamentals", "rag_agent_review"]
 InterviewPhase = Literal["opening", "followup", "summary", "completed"]
@@ -380,12 +381,50 @@ def normalize_resume_text(raw_text: str) -> tuple[str, bool]:
     return text, False
 
 
-def extract_pdf_text(content: bytes) -> str:
+def has_enough_resume_text(raw_text: str) -> bool:
+    text, _ = normalize_resume_text(raw_text)
+    return len(text) >= MIN_RESUME_TEXT_CHARS
+
+
+def extract_pdf_text_with_pymupdf(content: bytes) -> str:
     try:
-        reader = PdfReader(BytesIO(content))
-        return "\n".join(page.extract_text() or "" for page in reader.pages)
+        import fitz
+    except ImportError:
+        return ""
+
+    document = fitz.open(stream=content, filetype="pdf")
+    try:
+        return "\n".join(page.get_text("text", sort=True) or "" for page in document)
+    finally:
+        document.close()
+
+
+def extract_pdf_text_with_pypdf(content: bytes) -> str:
+    reader = PdfReader(BytesIO(content))
+    return "\n".join(page.extract_text() or "" for page in reader.pages)
+
+
+def extract_pdf_text(content: bytes) -> str:
+    candidates: list[str] = []
+    errors: list[Exception] = []
+
+    for extractor in (extract_pdf_text_with_pymupdf, extract_pdf_text_with_pypdf):
+        try:
+            raw_text = extractor(content)
+        except Exception as exc:
+            errors.append(exc)
+            continue
+        candidates.append(raw_text)
+        if has_enough_resume_text(raw_text):
+            return raw_text
+
+    if candidates:
+        return max(candidates, key=lambda item: len(normalize_resume_text(item)[0]))
+
+    try:
+        raise errors[0]
     except Exception as exc:
-        raise HTTPException(status_code=400, detail="PDF 解析失败，请上传文本型 PDF、DOCX、TXT 或粘贴简历文本。") from exc
+        raise HTTPException(status_code=400, detail="PDF 文本层解析失败，请上传有效 PDF、DOCX、TXT 或粘贴简历文本。") from exc
 
 
 def get_pdf_page_count(content: bytes) -> int | None:
@@ -447,7 +486,7 @@ def extract_resume_text(filename: str, content: bytes) -> ResumeExtractionResult
         page_count = get_pdf_page_count(content)
         extraction_method = "text"
         text, truncated = normalize_resume_text(raw_text)
-        if len(text) < 30:
+        if len(text) < MIN_RESUME_TEXT_CHARS:
             raw_text = extract_pdf_ocr_text(content)
             extraction_method = "ocr"
             ocr_used = True
@@ -461,7 +500,7 @@ def extract_resume_text(filename: str, content: bytes) -> ResumeExtractionResult
         raise HTTPException(status_code=400, detail="仅支持 PDF、DOCX、TXT 简历文件。")
 
     text, truncated = normalize_resume_text(raw_text)
-    if len(text) < 30:
+    if len(text) < MIN_RESUME_TEXT_CHARS:
         raise HTTPException(
             status_code=400,
             detail="未识别到足够的简历文本。请上传文本型 PDF/DOCX/TXT，或直接粘贴简历文本。",

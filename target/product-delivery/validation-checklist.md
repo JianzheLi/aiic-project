@@ -11,6 +11,7 @@
 - [x] `curl http://localhost:8000/health`
 - [x] `curl http://localhost:3000/api/config`
 - [x] `POST /api/resume/extract` 能解析 TXT/DOCX/PDF 文本简历，并对扫描 PDF 尝试 OCR。
+- [x] 文字型 PDF 优先走 PyMuPDF/pypdf 文本层解析，不触发 OCR。
 - [x] `POST /api/resume/extract` 文件上限默认 25MB，可通过 `RESUME_MAX_BYTES` 配置。
 - [x] `POST /api/interview/message` 能返回第一轮问题、资料依据、问题标签和风险假设。
 

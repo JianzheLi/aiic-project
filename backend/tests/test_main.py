@@ -7,6 +7,7 @@ from types import SimpleNamespace
 import pytest
 from docx import Document
 from fastapi.testclient import TestClient
+import fitz
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
@@ -131,6 +132,52 @@ def test_pdf_resume_extract_with_text(monkeypatch: pytest.MonkeyPatch) -> None:
     assert data["extraction_method"] == "text"
     assert data["ocr_used"] is False
     assert data["page_count"] == 2
+
+
+def test_real_text_pdf_uses_text_layer_before_ocr(monkeypatch: pytest.MonkeyPatch) -> None:
+    document = fitz.open()
+    page = document.new_page(width=720, height=360)
+    page.insert_text(
+        (48, 80),
+        "Resume Candidate\nProject: RAG course QA system with FastAPI, Milvus, chunking, rerank, and deployment.",
+        fontsize=18,
+    )
+    pdf_bytes = document.tobytes()
+    document.close()
+
+    def fail_ocr(content: bytes) -> str:
+        raise AssertionError("text PDF should not trigger OCR")
+
+    monkeypatch.setattr(main, "extract_pdf_ocr_text", fail_ocr)
+
+    response = client.post(
+        "/resume/extract",
+        files={"file": ("text-resume.pdf", pdf_bytes, "application/pdf")},
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert "RAG course QA system" in data["text"]
+    assert data["extraction_method"] == "text"
+    assert data["ocr_used"] is False
+
+
+def test_pdf_text_extraction_falls_back_to_pypdf_before_ocr(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(main, "extract_pdf_text_with_pymupdf", lambda content: "")
+    monkeypatch.setattr(main, "extract_pdf_text_with_pypdf", lambda content: "孙七 简历\n项目：文字型 PDF，负责 FastAPI、Milvus、chunk 和 rerank。")
+
+    def fail_ocr(content: bytes) -> str:
+        raise AssertionError("pypdf fallback should avoid OCR")
+
+    monkeypatch.setattr(main, "extract_pdf_ocr_text", fail_ocr)
+
+    response = client.post(
+        "/resume/extract",
+        files={"file": ("resume.pdf", b"%PDF text layer", "application/pdf")},
+    )
+
+    assert response.status_code == 200
+    assert "文字型 PDF" in response.json()["text"]
 
 
 def test_pdf_resume_extract_uses_ocr_fallback(monkeypatch: pytest.MonkeyPatch) -> None:
