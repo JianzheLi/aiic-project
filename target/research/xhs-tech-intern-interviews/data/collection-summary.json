@@ -1,0 +1,21 @@
+{
+  "generated_at": "2026-05-10 13:51:43",
+  "source": "Xiaohongshu public notes via xhs-apis with local cookie",
+  "category_counts": {
+    "ai-infra-app": 34,
+    "algorithm-llm": 34,
+    "appendix-frontend-fullstack": 14,
+    "backend": 34,
+    "cross-cutting": 42
+  },
+  "total_samples": 158,
+  "candidate_counts": {
+    "backend": 236,
+    "algorithm-llm": 231,
+    "ai-infra-app": 229,
+    "cross-cutting": 225,
+    "appendix-frontend-fullstack": 108
+  },
+  "search_errors": [],
+  "backend_strict_topup_added": 8
+}
