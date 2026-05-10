@@ -158,6 +158,15 @@ def test_resume_extract_rejects_unsupported_file() -> None:
     assert "仅支持 PDF、DOCX、TXT" in response.json()["detail"]
 
 
+def test_resume_extract_uses_configurable_file_limit(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("RESUME_MAX_BYTES", str(1024 * 1024))
+
+    response = client.post("/resume/extract", files={"file": ("resume.txt", b"x" * (1024 * 1024 + 1), "text/plain")})
+
+    assert response.status_code == 413
+    assert "简历文件不能超过 1MB" in response.json()["detail"]
+
+
 def test_resume_extract_rejects_too_little_text(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(main, "extract_pdf_text", lambda content: "")
     monkeypatch.setattr(main, "extract_pdf_ocr_text", lambda content: "")

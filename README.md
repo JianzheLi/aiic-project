@@ -95,6 +95,7 @@ cp .env.example .env
 | `OPENAI_API_KEY` | OpenAI-compatible API Key | `sk-...` |
 | `OPENAI_BASE_URL` | OpenAI-compatible API 地址，默认 DeepSeek | `https://api.deepseek.com` |
 | `MODEL_NAME` | 模型名称 | `deepseek-v4-pro` |
+| `RESUME_MAX_BYTES` | 简历上传文件大小上限，默认 25MB | `26214400` |
 | `SYSTEM_PROMPT` | 兼容 `/chat` 的系统提示词 | `你是一个中文友好的助手...` |
 
 不要把真实 `.env` 提交到 Git。
@@ -111,6 +112,7 @@ pip install -r requirements-dev.txt
 export OPENAI_API_KEY="你的 key"
 export OPENAI_BASE_URL="https://api.deepseek.com"
 export MODEL_NAME="deepseek-v4-pro"
+export RESUME_MAX_BYTES="26214400"
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 

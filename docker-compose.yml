@@ -10,6 +10,7 @@ services:
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.deepseek.com}
       MODEL_NAME: ${MODEL_NAME:-deepseek-v4-pro}
+      RESUME_MAX_BYTES: ${RESUME_MAX_BYTES:-26214400}
       SYSTEM_PROMPT: ${SYSTEM_PROMPT:-你是一个中文友好的 AI Agent 产品挑战助手，回答要清晰、务实、可执行。}
 
   frontend:

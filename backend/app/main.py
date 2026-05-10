@@ -24,7 +24,7 @@ from .agentic_rag import (
 DEFAULT_BASE_URL = "https://api.deepseek.com"
 DEFAULT_MODEL = "deepseek-v4-pro"
 DEFAULT_SYSTEM_PROMPT = "你是一个中文友好的 AI Agent 产品挑战助手，回答要清晰、务实、可执行。"
-MAX_RESUME_BYTES = 5 * 1024 * 1024
+DEFAULT_MAX_RESUME_BYTES = 25 * 1024 * 1024
 MAX_RESUME_CHARS = 20000
 
 Scenario = Literal["project_deep_dive", "backend_fundamentals", "rag_agent_review"]
@@ -185,6 +185,25 @@ def get_model_name() -> str:
 
 def get_base_url() -> str:
     return os.getenv("OPENAI_BASE_URL", DEFAULT_BASE_URL).strip() or DEFAULT_BASE_URL
+
+
+def get_resume_max_bytes() -> int:
+    configured = os.getenv("RESUME_MAX_BYTES", "").strip()
+    if not configured:
+        return DEFAULT_MAX_RESUME_BYTES
+    try:
+        value = int(configured)
+    except ValueError as exc:
+        raise HTTPException(status_code=500, detail="RESUME_MAX_BYTES 配置必须是整数。") from exc
+    if value < 1024 * 1024:
+        raise HTTPException(status_code=500, detail="RESUME_MAX_BYTES 不能小于 1MB。")
+    return value
+
+
+def format_file_size(size_bytes: int) -> str:
+    if size_bytes % (1024 * 1024) == 0:
+        return f"{size_bytes // (1024 * 1024)}MB"
+    return f"{size_bytes / (1024 * 1024):.1f}MB"
 
 
 def get_required_api_key() -> str:
@@ -498,11 +517,12 @@ def config() -> ConfigResponse:
 async def resume_extract(file: UploadFile = File(...)) -> ResumeExtractResponse:
     filename = file.filename or "resume"
     content_type = file.content_type or "application/octet-stream"
-    content = await file.read(MAX_RESUME_BYTES + 1)
+    max_resume_bytes = get_resume_max_bytes()
+    content = await file.read(max_resume_bytes + 1)
     if not content:
         raise HTTPException(status_code=400, detail="上传文件为空，请重新选择简历文件。")
-    if len(content) > MAX_RESUME_BYTES:
-        raise HTTPException(status_code=413, detail="简历文件不能超过 5MB。")
+    if len(content) > max_resume_bytes:
+        raise HTTPException(status_code=413, detail=f"简历文件不能超过 {format_file_size(max_resume_bytes)}。")
 
     extraction = await run_in_threadpool(extract_resume_text, filename, content)
     return ResumeExtractResponse(
