@@ -1,0 +1,68 @@
+{
+  "generated_at": "2026-05-10",
+  "total_sources": 204,
+  "counts_by_source_type": {
+    "JavaGuide": 2,
+    "面试官视角文章": 2,
+    "腾讯云开发者社区": 1,
+    "公开题库/博客": 2,
+    "知识库": 1,
+    "开源题库/站点": 1,
+    "GitHub/open-source": 54,
+    "牛客面经": 7,
+    "CSDN/博客": 1,
+    "公开题库/面经整理": 1,
+    "掘金题库": 2,
+    "技术社区题库": 1,
+    "技术博客": 2,
+    "公开面试题": 1,
+    "知乎文章": 1,
+    "论文/开源系统": 2,
+    "论文": 2,
+    "官方文档": 5,
+    "公开文章": 3,
+    "保研老师视角": 1,
+    "招生老师视角": 1,
+    "复试指导": 1,
+    "官方指导意见": 1,
+    "研究生院文章": 2,
+    "院系公开指南": 1,
+    "产品面试官视角": 2,
+    "官方面试指南": 1,
+    "scorecard": 1,
+    "PM hiring manager": 2,
+    "小红书公开笔记": 100
+  },
+  "counts_by_category": {
+    "backend": 16,
+    "interviewer": 11,
+    "github-open-source": 24,
+    "ai-app": 53,
+    "ai-infra": 5,
+    "algorithm-llm": 3,
+    "algorithm-coding": 30,
+    "frontend-fullstack": 2,
+    "teacher-boss": 7,
+    "interviewer-perspective": 53
+  },
+  "quality_tiers": {
+    "high": 104,
+    "medium": 100
+  },
+  "targets": {
+    "minimum_total_sources": 150,
+    "minimum_questioning_chains": 50,
+    "minimum_interviewer_teacher_boss_sources": 30,
+    "minimum_github_open_source_sources": 40
+  },
+  "notes": [
+    "XHS samples are public search-result level summaries and do not store cookie, xsec_token, web_session, or local secret paths.",
+    "External sources are curated from public pages, GitHub repositories, open-source docs, public interview writeups, and subagent research summaries.",
+    "The research intentionally stores summaries and questioning chains, not copied full text."
+  ],
+  "derived_counts": {
+    "github_open_source": 54,
+    "interviewer_teacher_boss": 108,
+    "xhs_public_notes": 100
+  }
+}
