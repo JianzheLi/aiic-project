@@ -93,6 +93,36 @@ test("keeps context and shows a readable backend error", async ({ page }) => {
   await expect(page.getByLabel("项目经历")).toHaveValue(projectText);
 });
 
+test("guards rapid repeated start clicks", async ({ page }) => {
+  await page.unroute("**/api/interview/message");
+  let requestCount = 0;
+  await page.route("**/api/interview/message", async (route) => {
+    requestCount += 1;
+    await new Promise((resolve) => setTimeout(resolve, 250));
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        reply: "请说明你在项目中的个人贡献。",
+        phase: "followup",
+        round: 1,
+        max_rounds: 5,
+        is_complete: false,
+        model: "mock-model",
+      }),
+    });
+  });
+
+  await page.goto("/");
+  await page.getByLabel("项目经历").fill(projectText);
+  const startButton = page.getByRole("button", { name: "开始面试" });
+  await startButton.dispatchEvent("click");
+  await startButton.dispatchEvent("click");
+
+  await expect(page.getByText("第 1 / 5 轮")).toBeVisible();
+  expect(requestCount).toBe(1);
+});
+
 test("renders cleanly on a mobile viewport", async ({ page }) => {
   const consoleErrors: string[] = [];
   page.on("console", (message) => {

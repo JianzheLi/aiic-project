@@ -94,17 +94,17 @@
 - [x] 建立显式计划文档。
 - [x] 确定第一个窄目标用户和面试场景：准备互联网大厂技术实习面试的中国本科生。
 - [x] 完成实现设计：新增 `/interview/message`，保留 `/chat`、`/config`、`/health`，详见 `target/agent-architecture-design/implementation-design.md`。
-- [ ] 改造前端，从通用聊天 demo 变成模拟面试训练界面。
-- [ ] 改造后端系统提示词和返回逻辑，支持面试追问与结构化反馈。
-- [ ] 补充 README 的产品定位、运行方式、技术栈和提交说明。
-- [ ] 本地或服务器验证 `/health`、`/api/config`、`/api/chat`。
-- [ ] Docker Compose 重新构建并部署到公网 demo。
+- [x] 改造前端，从通用聊天 demo 变成模拟面试训练界面。
+- [x] 改造后端系统提示词和返回逻辑，支持面试追问与结构化反馈。
+- [x] 补充 README 的产品定位、运行方式、技术栈和提交说明。
+- [x] 本地或服务器验证 `/health`、`/api/config`、`/api/chat`。
+- [x] Docker Compose 重新构建并部署到公网 demo。
 
 ### 提交材料
 
-- [ ] 准备 Product Memo 草稿。
+- [x] 准备 Product Memo 草稿，详见 `target/product-delivery/product-memo.md`。
 - [x] 准备可作为 Product Memo 原料的调研报告：`target/research/final-report/ai-interviewer-research-report.md` 和 `target/research/final-report/ai-interviewer-research-report.pdf`。
-- [ ] 准备 3 分钟以内 Demo 视频脚本。
+- [x] 准备 3 分钟以内 Demo 视频脚本，详见 `target/product-delivery/demo-video-script.md`。
 - [ ] 提交 git commit 并 push 到远程仓库。
 
 ## Product Memo 素材池
@@ -112,6 +112,7 @@
 - 目标用户与核心痛点：基于三轮公开调研整合，详见 `target/research/synthesis.md` 和 `target/research/final-report/ai-interviewer-research-report.md`。
 - 产品设计说明：强调窄场景、项目经历驱动、连续追问、结构化挂点复盘；完整设计见 `target/agent-architecture-design/design-proposal.md`。
 - 版本迭代记录：从通用聊天样本到模拟面试官；后续每次关键变更继续记录。
+- 交付材料草稿：`target/product-delivery/`。
 - 下一步设计：首版之后可选方向包括 JD 匹配、简历解析、语音练习、历史记录、个性化题库；需要 tools/session/tracing 时再考虑 OpenAI Agents SDK，需要长期状态和 human-in-the-loop 时再考虑 LangGraph。
 - AI 工具使用：Codex 用于代码理解、计划维护、实现和调试；LLM API 用于面试官能力。
 
@@ -126,3 +127,4 @@
 - 2026-05-10：完成第三轮需求验证和 research 总整合；首版输入确定为项目经历文本，JD 可选，产品形态确定为面试训练工作台。
 - 2026-05-10：完成最终调研报告与 LaTeX PDF，整合 456 条结构化研究输入，沉淀用户痛点、竞品缺口、优先级矩阵和 MVP 取舍。
 - 2026-05-10：完成 Agent 架构与产品设计调研；调研 OpenAI Agents SDK、Responses API、LangGraph、AutoGen、CrewAI、OASIS 等资料后，决定首版采用轻量状态机 workflow，不引入重型 agent 框架。
+- 2026-05-10：完成首版完整产品实现：后端 `/interview/message` workflow、前端面试训练工作台、Product Memo 草稿、Demo 视频脚本和自动化测试。

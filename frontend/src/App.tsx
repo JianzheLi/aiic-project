@@ -107,6 +107,7 @@ function App() {
   const [connectionState, setConnectionState] = useState<ConnectionState>("checking");
   const [isLoading, setIsLoading] = useState(false);
   const answerRef = useRef<HTMLTextAreaElement>(null);
+  const requestInFlightRef = useRef(false);
   const apiBaseUrl = useMemo(getApiBaseUrl, []);
 
   const activeScenario = scenarios.find((item) => item.id === scenario) ?? scenarios[0];
@@ -138,6 +139,20 @@ function App() {
   useEffect(() => {
     void loadConfig();
   }, []);
+
+  function beginRequest() {
+    if (requestInFlightRef.current) {
+      return false;
+    }
+    requestInFlightRef.current = true;
+    setIsLoading(true);
+    return true;
+  }
+
+  function finishRequest() {
+    requestInFlightRef.current = false;
+    setIsLoading(false);
+  }
 
   async function requestInterview(nextPhase: InterviewPhase, nextRound: number, nextMessages: InterviewMessage[]) {
     const response = await fetch(`${apiBaseUrl}/interview/message`, {
@@ -181,10 +196,11 @@ function App() {
   }
 
   async function startInterview() {
-    if (isLoading) {
+    if (!beginRequest()) {
       return;
     }
     if (projectContext.trim().length < 30) {
+      finishRequest();
       setError("请先粘贴至少 30 个字的项目经历，面试官才能围绕细节追问。");
       return;
     }
@@ -195,7 +211,6 @@ function App() {
     setAnswerInput("");
     setPhase("opening");
     setRound(0);
-    setIsLoading(true);
 
     try {
       const data = await requestInterview("opening", 0, []);
@@ -205,14 +220,14 @@ function App() {
       const message = caughtError instanceof Error ? caughtError.message : "请求失败，请稍后重试。";
       setError(message);
     } finally {
-      setIsLoading(false);
+      finishRequest();
     }
   }
 
   async function sendAnswer(event?: FormEvent<HTMLFormElement>) {
     event?.preventDefault();
     const content = answerInput.trim();
-    if (!content || isLoading || phase === "completed") {
+    if (!content || phase === "completed" || !beginRequest()) {
       return;
     }
 
@@ -225,7 +240,6 @@ function App() {
     setMessages(nextMessages);
     setAnswerInput("");
     setError("");
-    setIsLoading(true);
 
     try {
       const data = await requestInterview("followup", round, nextMessages);
@@ -234,13 +248,13 @@ function App() {
       const message = caughtError instanceof Error ? caughtError.message : "请求失败，请稍后重试。";
       setError(message);
     } finally {
-      setIsLoading(false);
+      finishRequest();
       answerRef.current?.focus();
     }
   }
 
   async function endAndDebrief() {
-    if (isLoading || !hasStarted) {
+    if (!hasStarted || !beginRequest()) {
       return;
     }
     const pendingAnswer = answerInput.trim()
@@ -257,7 +271,6 @@ function App() {
     setMessages(pendingAnswer);
     setAnswerInput("");
     setError("");
-    setIsLoading(true);
 
     try {
       const data = await requestInterview("summary", round, pendingAnswer);
@@ -266,7 +279,7 @@ function App() {
       const message = caughtError instanceof Error ? caughtError.message : "请求失败，请稍后重试。";
       setError(message);
     } finally {
-      setIsLoading(false);
+      finishRequest();
     }
   }
 
