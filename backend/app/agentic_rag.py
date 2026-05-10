@@ -157,8 +157,8 @@ def build_risk_hypothesis(scenario: str, cards: tuple[RetrievedSourceCard, ...])
     tags = {tag for item in cards for tag in item.card.tags}
     if scenario == "rag_agent_review":
         if {"chunking", "rerank"} & tags:
-            return "候选人可能只描述了 RAG 流程，但缺少 chunk/rerank 参数选择、坏例归因和评估指标。"
-        return "候选人可能只说调 API，缺少数据处理、检索质量和幻觉控制证据。"
+            return "候选人可能只描述了 RAG 流程，但缺少 chunk/rerank 选择依据、坏例归因和基本观察方法。"
+        return "候选人可能只说调 API，缺少数据处理、检索质量和幻觉控制的工程证据。"
     if scenario == "backend_fundamentals":
         if {"mysql", "redis"} & tags:
             return "候选人可能能背概念，但说不清事务、锁、缓存一致性和故障兜底如何落到项目。"
@@ -226,5 +226,10 @@ def critique_interview_reply(reply: str, evidence: InterviewEvidence, *, is_summ
         issues.append("一次问了太多问题，应该收敛为一个主问题。")
     if any(term in reply for term in ("自我介绍", "简单介绍", "聊聊你的项目")):
         issues.append("问题过于泛泛，需要改成针对实现细节、指标、坏例或失败路径的追问。")
+    demand_markers = ("另外", "分别", "同时", "以及", "再说明", "给我一组数字", "调优前后")
+    if sum(1 for marker in demand_markers if marker in reply) >= 2:
+        issues.append("问题像连珠炮，要求候选人同时回答太多子任务。")
+    exact_metric_terms = ("给我一组数字", "召回率", "准确率", "调优前后", "topK", "最终进入上下文")
+    if "给我一组数字" in reply or sum(1 for term in exact_metric_terms if term in reply) >= 3:
+        issues.append("问题过度要求精确量化数据，容易逼候选人编数字；应改问判断过程、日志线索或如果没记录会如何补指标。")
     return issues[:4]
-

@@ -186,14 +186,14 @@
     "key_points": [
       "Milvus hybrid search merges multiple ANN search result sets through reranking.",
       "Reranking is a separate step from initial retrieval and affects final relevance.",
-      "Good RAG interviews should ask how candidates tune recall, rerank and final precision."
+      "Good RAG interviews should ask how candidates reason about recall and rerank quality without forcing invented exact metrics."
     ],
     "probe_templates": [
-      "你怎么判断召回错了还是 rerank 错了？分别看哪些日志或指标？",
-      "向量检索 topK、rerank 阈值和最终上下文条数是怎么定的？"
+      "你遇到过召回或 rerank 相关坏例吗？当时用什么现象或日志判断问题更可能出在哪一层？",
+      "如果当时没有记录完整指标，你现在会补哪些日志或简单评估来验证 topK、rerank 和上下文条数是否合理？"
     ],
     "anti_patterns": [
-      "只说用了 Milvus/向量库，不说 topK、召回率、rerank 或坏例。",
+      "只说用了 Milvus/向量库，不说 topK 选择依据、rerank 判断方法或坏例。",
       "把 embedding 相似度当成最终答案可信度。"
     ]
   },

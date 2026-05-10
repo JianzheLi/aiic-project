@@ -312,6 +312,29 @@ def test_generic_interview_question_is_rewritten_by_critic(monkeypatch: pytest.M
     assert "Redis 缓存" in response.json()["reply"]
 
 
+def test_overly_demanding_metric_question_is_rewritten_by_critic(monkeypatch: pytest.MonkeyPatch) -> None:
+    calls: list[list[dict[str, str]]] = []
+
+    def fake_completion(messages: list[dict[str, str]], temperature: float = 0.7) -> str:
+        calls.append(messages)
+        if len(calls) == 1:
+            return (
+                "你简历里写了 RAG 课程问答系统。请具体描述一个坏例，并说明根因在召回还是 rerank；"
+                "另外，给我一组数字：调优前后的 topK、最终进入上下文条数、召回率和准确率变化。"
+            )
+        return "你简历里写了 RAG 课程问答系统和坏例分析。请选一个相似章节召回混淆的例子，说明当时你看到的现象，以及你会先看哪些日志来判断问题更可能出在 chunk、召回还是 rerank。"
+
+    monkeypatch.setattr(main, "request_chat_completion", fake_completion)
+
+    response = client.post("/interview/message", json=interview_payload(scenario="rag_agent_review"))
+
+    assert response.status_code == 200
+    assert len(calls) == 2
+    assert "过度要求精确量化数据" in calls[1][-1]["content"]
+    assert "哪些日志" in response.json()["reply"]
+    assert "给我一组数字" not in response.json()["reply"]
+
+
 def test_interview_summary_returns_completed(monkeypatch: pytest.MonkeyPatch) -> None:
     stub_completion(
         monkeypatch,
