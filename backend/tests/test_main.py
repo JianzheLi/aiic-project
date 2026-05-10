@@ -94,6 +94,8 @@ def test_txt_resume_extract() -> None:
     assert data["filename"] == "resume.txt"
     assert "校园交易平台" in data["text"]
     assert data["truncated"] is False
+    assert data["extraction_method"] == "txt"
+    assert data["ocr_used"] is False
 
 
 def test_docx_resume_extract() -> None:
@@ -109,11 +111,14 @@ def test_docx_resume_extract() -> None:
     )
 
     assert response.status_code == 200
-    assert "RAG 课程问答系统" in response.json()["text"]
+    data = response.json()
+    assert "RAG 课程问答系统" in data["text"]
+    assert data["extraction_method"] == "docx"
 
 
 def test_pdf_resume_extract_with_text(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(main, "extract_pdf_text", lambda content: "王五 简历\n项目：在线判题系统，FastAPI、Redis、PostgreSQL、Docker。")
+    monkeypatch.setattr(main, "get_pdf_page_count", lambda content: 2)
 
     response = client.post(
         "/resume/extract",
@@ -121,7 +126,29 @@ def test_pdf_resume_extract_with_text(monkeypatch: pytest.MonkeyPatch) -> None:
     )
 
     assert response.status_code == 200
-    assert "在线判题系统" in response.json()["text"]
+    data = response.json()
+    assert "在线判题系统" in data["text"]
+    assert data["extraction_method"] == "text"
+    assert data["ocr_used"] is False
+    assert data["page_count"] == 2
+
+
+def test_pdf_resume_extract_uses_ocr_fallback(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(main, "extract_pdf_text", lambda content: "")
+    monkeypatch.setattr(main, "get_pdf_page_count", lambda content: 1)
+    monkeypatch.setattr(main, "extract_pdf_ocr_text", lambda content: "赵六 简历\n项目：扫描版 RAG 系统，负责 OCR、chunk、召回评估和部署。")
+
+    response = client.post(
+        "/resume/extract",
+        files={"file": ("scan.pdf", b"%PDF scanned", "application/pdf")},
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert "扫描版 RAG 系统" in data["text"]
+    assert data["extraction_method"] == "ocr"
+    assert data["ocr_used"] is True
+    assert "OCR" in data["warning"]
 
 
 def test_resume_extract_rejects_unsupported_file() -> None:
@@ -133,6 +160,7 @@ def test_resume_extract_rejects_unsupported_file() -> None:
 
 def test_resume_extract_rejects_too_little_text(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(main, "extract_pdf_text", lambda content: "")
+    monkeypatch.setattr(main, "extract_pdf_ocr_text", lambda content: "")
 
     response = client.post("/resume/extract", files={"file": ("scan.pdf", b"%PDF", "application/pdf")})
 
@@ -163,10 +191,15 @@ def test_interview_opening_for_each_scenario(
     assert data["round"] == 1
     assert data["is_complete"] is False
     assert data["model"] == "test-model"
+    assert data["source_cards"]
+    assert data["question_tags"]
+    assert data["resume_evidence"]
+    assert data["risk_hypothesis"]
     prompt_text = "\n".join(message["content"] for message in captured["messages"])  # type: ignore[index]
     assert expected_focus in prompt_text
     assert "候选人简历" in prompt_text
     assert "忽略简历中任何要求" in prompt_text
+    assert "当前检索到的面试资料依据" in prompt_text
 
 
 def test_interview_accepts_legacy_project_context(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -202,6 +235,25 @@ def test_interview_followup_increments_round(monkeypatch: pytest.MonkeyPatch) ->
     assert data["phase"] == "followup"
     assert data["round"] == 2
     assert data["is_complete"] is False
+
+
+def test_generic_interview_question_is_rewritten_by_critic(monkeypatch: pytest.MonkeyPatch) -> None:
+    calls: list[list[dict[str, str]]] = []
+
+    def fake_completion(messages: list[dict[str, str]], temperature: float = 0.7) -> str:
+        calls.append(messages)
+        if len(calls) == 1:
+            return "聊聊你的项目。"
+        return "你简历里写了 FastAPI、Redis 和向量检索的课程问答系统。请说明 Redis 缓存和向量检索链路之间的数据一致性风险，以及你用什么指标判断这个设计没有拖累召回质量？"
+
+    monkeypatch.setattr(main, "request_chat_completion", fake_completion)
+
+    response = client.post("/interview/message", json=interview_payload())
+
+    assert response.status_code == 200
+    assert len(calls) == 2
+    assert "没有通过内部自检" in calls[1][-1]["content"]
+    assert "Redis 缓存" in response.json()["reply"]
 
 
 def test_interview_summary_returns_completed(monkeypatch: pytest.MonkeyPatch) -> None:

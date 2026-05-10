@@ -1,0 +1,222 @@
+[
+  {
+    "id": "agent-react-001",
+    "title": "ReAct: reasoning and acting loop",
+    "url": "https://arxiv.org/abs/2210.03629",
+    "source_type": "paper",
+    "domains": ["agent", "tool calling", "reasoning", "retrieval"],
+    "tags": ["agent", "workflow", "retrieval", "failure", "evaluation"],
+    "keywords": ["ReAct", "agent", "tool", "reasoning", "acting", "observation", "plan"],
+    "key_points": [
+      "ReAct alternates reasoning and action so the model can update a plan after observing external information.",
+      "For interviews, the equivalent action is retrieving evidence before deciding the next follow-up.",
+      "The useful product pattern is not exposing chain-of-thought, but exposing evidence and next action."
+    ],
+    "probe_templates": [
+      "你这个 Agent 每一步的状态、动作和观察分别是什么？失败后怎么重试或回滚？",
+      "如果工具返回空结果或错误结果，系统怎么判断该继续问、换工具还是降级？"
+    ],
+    "anti_patterns": [
+      "只说用了 Agent，没有说清楚状态、动作、观察和异常路径。",
+      "把多轮提示词包装成 Agent，但没有工具、状态或失败处理。"
+    ]
+  },
+  {
+    "id": "agent-self-rag-002",
+    "title": "Self-RAG: retrieval plus self-critique",
+    "url": "https://arxiv.org/abs/2310.11511",
+    "source_type": "paper",
+    "domains": ["rag", "self-reflection", "retrieval", "evaluation"],
+    "tags": ["rag", "retrieval", "evaluation", "hallucination", "critic"],
+    "keywords": ["Self-RAG", "retrieve", "critique", "reflection", "factuality", "citation", "hallucination"],
+    "key_points": [
+      "Self-RAG retrieves on demand and critiques retrieved passages and generated outputs.",
+      "The transferable idea is a generation step followed by a verifier/critic step.",
+      "For mock interviews, critic should reject generic questions that do not cite resume evidence or technical sources."
+    ],
+    "probe_templates": [
+      "你怎么判断这一轮需要检索资料，而不是直接追问？检索不到时怎么处理？",
+      "你的回答或问题有没有自检标准？怎么拦截幻觉、泛泛追问和无依据评价？"
+    ],
+    "anti_patterns": [
+      "固定塞入若干文档，不判断是否相关。",
+      "生成后没有评估 factuality、citation 或任务约束。"
+    ]
+  },
+  {
+    "id": "agent-graphrag-003",
+    "title": "Microsoft GraphRAG query modes",
+    "url": "https://microsoft.github.io/graphrag/query/overview/",
+    "source_type": "documentation",
+    "domains": ["GraphRAG", "retrieval", "question generation"],
+    "tags": ["rag", "retrieval", "question-generation", "system-design"],
+    "keywords": ["GraphRAG", "local search", "global search", "DRIFT", "question generation", "community"],
+    "key_points": [
+      "GraphRAG separates local search, global search, DRIFT search and question generation.",
+      "For interviews, local search maps to resume evidence and global search maps to domain-level rubrics.",
+      "Question generation can be treated as a first-class retrieval output, not just a final LLM prompt."
+    ],
+    "probe_templates": [
+      "你怎么区分从简历局部证据追问，和从岗位通用知识体系追问？",
+      "如果候选人的项目跨多个技术域，你的检索排序和追问优先级怎么定？"
+    ],
+    "anti_patterns": [
+      "只做向量相似度，无法解释为什么这轮应该问这个问题。",
+      "检索结果无法映射到面试题纲或评分维度。"
+    ]
+  },
+  {
+    "id": "eval-interviewer-004",
+    "title": "LLM-as-an-Interviewer dynamic evaluation",
+    "url": "https://arxiv.org/abs/2412.10424",
+    "source_type": "paper",
+    "domains": ["interview", "evaluation", "multi-turn"],
+    "tags": ["interview", "evaluation", "followup", "report"],
+    "keywords": ["interviewer", "multi-turn", "follow-up", "feedback", "interview report", "adaptability"],
+    "key_points": [
+      "Interview-style evaluation uses dynamic multi-turn interactions rather than static one-shot tests.",
+      "Follow-up questions reveal adaptability, clarification ability and real-world applicability.",
+      "The final report should aggregate concrete examples from the interaction."
+    ],
+    "probe_templates": [
+      "上一轮回答里哪个点最需要澄清？为什么这个澄清能区分真实做过和只会背？",
+      "复盘时你会引用哪一句回答作为证据，而不是给泛泛建议？"
+    ],
+    "anti_patterns": [
+      "每轮随机换题，不能沿着候选人的回答深挖。",
+      "复盘只给分数，不引用具体回答证据。"
+    ]
+  },
+  {
+    "id": "ocr-pymupdf-005",
+    "title": "PyMuPDF OCR with Tesseract",
+    "url": "https://pymupdf.readthedocs.io/en/latest/recipes-ocr.html",
+    "source_type": "documentation",
+    "domains": ["PDF", "OCR", "Tesseract"],
+    "tags": ["ocr", "pdf", "resume-parsing"],
+    "keywords": ["PyMuPDF", "OCR", "Tesseract", "get_textpage_ocr", "PDF", "scanned"],
+    "key_points": [
+      "PyMuPDF can OCR PDF pages by calling Tesseract through get_textpage_ocr.",
+      "OCR is much slower than native text extraction, so it should only run when needed.",
+      "The OCR output can then be read through normal text extraction methods."
+    ],
+    "probe_templates": [
+      "你的 PDF 解析怎么判断是否需要 OCR？OCR 失败或很慢时怎么降级？",
+      "扫描简历和文本型 PDF 的解析路径有什么不同？"
+    ],
+    "anti_patterns": [
+      "所有 PDF 都 OCR，导致慢且浪费。",
+      "扫描 PDF 解析失败时只报错，没有文本粘贴兜底。"
+    ]
+  },
+  {
+    "id": "backend-mysql-006",
+    "title": "MySQL InnoDB transaction isolation levels",
+    "url": "https://dev.mysql.com/doc/refman/8.4/en/innodb-transaction-isolation-levels.html",
+    "source_type": "official-doc",
+    "domains": ["MySQL", "InnoDB", "transaction"],
+    "tags": ["backend", "mysql", "transaction", "concurrency", "consistency"],
+    "keywords": ["MySQL", "InnoDB", "transaction", "isolation", "REPEATABLE READ", "READ COMMITTED", "lock", "deadlock"],
+    "key_points": [
+      "InnoDB supports READ UNCOMMITTED, READ COMMITTED, REPEATABLE READ and SERIALIZABLE.",
+      "MySQL default InnoDB isolation is REPEATABLE READ.",
+      "Different isolation levels use different locking strategies and trade consistency for overhead."
+    ],
+    "probe_templates": [
+      "你项目里的订单或库存操作在什么隔离级别下跑？为什么这个级别够用？",
+      "如果两个请求并发扣减同一行库存，会发生什么锁竞争或死锁路径？"
+    ],
+    "anti_patterns": [
+      "只背四种隔离级别，不说自己项目里的读写路径。",
+      "说用了事务，但没有解释锁范围、索引条件和失败重试。"
+    ]
+  },
+  {
+    "id": "backend-redis-007",
+    "title": "Redis distributed locks and Redlock",
+    "url": "https://redis.io/docs/latest/develop/clients/patterns/distributed-locks/",
+    "source_type": "official-doc",
+    "domains": ["Redis", "distributed lock", "Redlock"],
+    "tags": ["backend", "redis", "lock", "consistency", "failure"],
+    "keywords": ["Redis", "distributed lock", "Redlock", "SET NX PX", "lease", "expiration", "clock"],
+    "key_points": [
+      "Redis documents a canonical distributed lock pattern and the Redlock algorithm.",
+      "Correct locks need unique values, expiration and safe release semantics.",
+      "Interview-worthy risk points include lease timeout, clock drift, client pause and duplicate work."
+    ],
+    "probe_templates": [
+      "如果你用 Redis 锁防重复提交，锁值、过期时间和释放条件怎么设计？",
+      "业务执行超过锁 TTL 或服务暂停时，会不会出现并发写？怎么兜底？"
+    ],
+    "anti_patterns": [
+      "只说 setnx 加锁，不说随机 token、过期和释放校验。",
+      "把 Redis 锁当成强一致事务，不讨论失败窗口。"
+    ]
+  },
+  {
+    "id": "backend-kafka-008",
+    "title": "Kafka exactly-once processing design",
+    "url": "https://kafka.apache.org/41/design/design/",
+    "source_type": "official-doc",
+    "domains": ["Kafka", "MQ", "idempotence"],
+    "tags": ["backend", "kafka", "mq", "idempotency", "consistency"],
+    "keywords": ["Kafka", "exactly-once", "idempotent producer", "transactional.id", "transaction", "offset", "MQ", "RabbitMQ"],
+    "key_points": [
+      "Kafka exactly-once processing depends on producer and consumer transaction coordination.",
+      "The producer must use a transactional id for transactional delivery.",
+      "Even when Kafka helps, business handlers still need idempotency around side effects."
+    ],
+    "probe_templates": [
+      "你的消息通知或订单异步处理如何做到幂等？幂等键放在哪里？",
+      "如果消费成功但数据库写失败，或者数据库写成功但提交 offset 失败，会怎么恢复？"
+    ],
+    "anti_patterns": [
+      "说 MQ 天然可靠，但不讨论重复消费和业务幂等。",
+      "把 exactly-once 当成端到端业务无重复，不区分消息系统和业务副作用。"
+    ]
+  },
+  {
+    "id": "rag-milvus-009",
+    "title": "Milvus hybrid search reranking",
+    "url": "https://milvus.io/docs/reranking.md",
+    "source_type": "official-doc",
+    "domains": ["Milvus", "vector search", "rerank"],
+    "tags": ["rag", "retrieval", "rerank", "evaluation"],
+    "keywords": ["Milvus", "hybrid search", "reranking", "ANN", "vector", "recall", "rerank", "embedding"],
+    "key_points": [
+      "Milvus hybrid search merges multiple ANN search result sets through reranking.",
+      "Reranking is a separate step from initial retrieval and affects final relevance.",
+      "Good RAG interviews should ask how candidates tune recall, rerank and final precision."
+    ],
+    "probe_templates": [
+      "你怎么判断召回错了还是 rerank 错了？分别看哪些日志或指标？",
+      "向量检索 topK、rerank 阈值和最终上下文条数是怎么定的？"
+    ],
+    "anti_patterns": [
+      "只说用了 Milvus/向量库，不说 topK、召回率、rerank 或坏例。",
+      "把 embedding 相似度当成最终答案可信度。"
+    ]
+  },
+  {
+    "id": "product-gptinterviewer-010",
+    "title": "GPTInterviewer resume and job description flow",
+    "url": "https://github.com/jiatastic/GPTInterviewer",
+    "source_type": "github",
+    "domains": ["mock interview", "resume", "JD"],
+    "tags": ["interview", "resume", "jd", "product"],
+    "keywords": ["resume", "job description", "personalized questions", "mock interview", "voice", "chat"],
+    "key_points": [
+      "Open-source mock interview products commonly personalize questions from resumes and job descriptions.",
+      "The differentiation opportunity is deeper technical follow-up and evidence-backed feedback.",
+      "A simple chat or voice wrapper is not enough for Chinese technical internship preparation."
+    ],
+    "probe_templates": [
+      "你的产品比直接把简历和 JD 丢给通用聊天机器人强在哪里？",
+      "问题生成有没有岗位依据、简历依据和上一轮回答依据？"
+    ],
+    "anti_patterns": [
+      "只生成一组静态问题，不做连续追问。",
+      "只做语音壳子，问题质量仍然泛泛。"
+    ]
+  }
+]
