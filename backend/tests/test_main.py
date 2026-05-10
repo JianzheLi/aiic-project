@@ -528,7 +528,7 @@ def test_training_full_mock_opening_requires_resume_context(monkeypatch: pytest.
             category="full_mock",
             resume_text="候选人简历：RAG 课程问答系统，负责 FastAPI、Milvus、chunk、rerank 和 Docker 部署。",
             job_target="AI 应用开发实习",
-            max_rounds=6,
+            max_rounds=8,
         ),
     )
 
@@ -536,12 +536,43 @@ def test_training_full_mock_opening_requires_resume_context(monkeypatch: pytest.
     data = response.json()
     assert data["phase"] == "followup"
     assert data["round"] == 1
-    assert data["max_rounds"] == 6
+    assert data["max_rounds"] == 8
     assert data["source_cards"]
     prompt_text = "\n".join(message["content"] for message in captured["messages"])  # type: ignore[index]
     assert "完整模拟面试" in prompt_text
     assert "简历经历深挖" in prompt_text
+    assert "每个板块至少连续或累计追问两轮" in prompt_text
     assert "候选人简历" in prompt_text
+
+
+def test_training_full_mock_followup_lets_model_choose_resume_related_stage(monkeypatch: pytest.MonkeyPatch) -> None:
+    captured = stub_completion(monkeypatch, "八股轮：你简历里写了 Redis 缓存。请解释缓存击穿和缓存穿透的区别，并说明你的项目更可能遇到哪一种。")
+
+    response = client.post(
+        "/training/message",
+        json=training_payload(
+            mode="full_mock",
+            category="full_mock",
+            phase="followup",
+            round=2,
+            max_rounds=8,
+            resume_text="候选人简历：校园交易平台，负责 Spring Boot、MySQL、Redis 缓存和 RabbitMQ。",
+            job_target="后端开发实习",
+            messages=[
+                {"role": "assistant", "content": "项目轮：你负责哪些模块？"},
+                {"role": "user", "content": "我负责订单、缓存和消息通知。"},
+                {"role": "assistant", "content": "项目轮：缓存失败时怎么兜底？"},
+                {"role": "user", "content": "我会删除缓存并回源数据库。"},
+            ],
+        ),
+    )
+
+    assert response.status_code == 200
+    prompt_text = "\n".join(message["content"] for message in captured["messages"])  # type: ignore[index]
+    assert "自主判断本轮最该问" in prompt_text
+    assert "八股轮，必须和简历技术栈或目标岗位相关" in prompt_text
+    assert "简历相关八股基础：至少 2 轮" in prompt_text
+    assert "现在进入完整模拟面试的第 3 部分" not in prompt_text
 
 
 def test_training_full_mock_summary_returns_report(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -554,7 +585,7 @@ def test_training_full_mock_summary_returns_report(monkeypatch: pytest.MonkeyPat
             category="full_mock",
             phase="summary",
             round=4,
-            max_rounds=6,
+            max_rounds=8,
             resume_text="候选人简历：后端交易平台，负责 Redis、MySQL、MQ。",
             messages=[{"role": "user", "content": "我负责缓存和订单链路。"}],
         ),
@@ -568,6 +599,7 @@ def test_training_full_mock_summary_returns_report(monkeypatch: pytest.MonkeyPat
     prompt_text = "\n".join(message["content"] for message in captured["messages"])  # type: ignore[index]
     assert "完整模拟面试" in prompt_text
     assert "维度评分" in prompt_text
+    assert "是否都至少问了两轮" in prompt_text
 
 
 def test_training_full_mock_rejects_missing_resume() -> None:

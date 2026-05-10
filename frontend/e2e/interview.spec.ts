@@ -137,9 +137,11 @@ async function mockTraining(page: import("@playwright/test").Page) {
           reply: isSummary
             ? "## 面试结论\n整体中等，简历项目能讲清背景，但八股和手撕边界还不稳。\n\n## 维度评分\n\n| 维度 | 评级 | 证据 | 主要问题 | 改进动作 |\n| --- | --- | --- | --- | --- |\n| 简历/项目可信度 | 中 | 能说明 RAG 项目 | 坏例证据不足 | 补充一次真实排查过程 |\n\n## 最可能影响结果的 5 个问题\n1. chunk 坏例归因不清。"
             : request.phase === "opening"
-              ? "完整模拟第一轮：简历里你写了课程问答系统。请说明你个人负责的检索链路，以及一次真实坏例是怎么定位的？"
+              ? "项目轮：简历里你写了课程问答系统。请说明你个人负责的检索链路，以及一次真实坏例是怎么定位的？"
               : request.round === 1
-                ? "八股轮：请解释 Redis 缓存击穿和缓存穿透的区别，并说明各自的常见处理方式。"
+                ? "项目轮：继续沿着这个 RAG 项目，请说明你怎么判断坏例更可能出在 chunk、召回还是 rerank。"
+                : request.round === 2
+                  ? "八股轮：结合你简历里的 RAG 项目，请解释 chunk 大小和召回质量之间的关系。"
                 : "手撕轮：请实现反转链表，先说明指针更新顺序、复杂度和空链表边界。",
           source_cards: sourceCards(["project", "backend", "coding"]),
           question_tags: ["project", "backend", "coding"],
@@ -245,12 +247,12 @@ test("runs a full mock interview and generates a report", async ({ page }) => {
 
   await page.getByRole("button", { name: "RAG 简历" }).click();
   await page.getByRole("button", { name: /开始完整模拟/ }).click();
-  await expect(page.getByText("完整模拟第一轮")).toBeVisible();
-  await expect(page.getByText("第 1 / 6 轮")).toBeVisible();
+  await expect(page.getByText("项目轮")).toBeVisible();
+  await expect(page.getByText("第 1 / 8 轮")).toBeVisible();
 
   await page.getByLabel("你的回答").fill("我负责 PDF 解析、chunk 策略和 Milvus 检索链路，坏例主要是章节混淆。");
   await page.getByRole("button", { name: "发送回答" }).click();
-  await expect(page.getByText("缓存击穿")).toBeVisible();
+  await expect(page.getByText("继续沿着这个 RAG 项目")).toBeVisible();
 
   await page.getByRole("button", { name: "结束并复盘" }).click();
   await expect(page.getByLabel("训练反馈").getByRole("heading", { name: "面试结论" })).toBeVisible();

@@ -160,7 +160,7 @@ const modeOptions: ModeOption[] = [
     id: "full_mock",
     title: "完整模拟",
     description: "一场完整技术面试",
-    detail: "依次覆盖简历深挖、八股基础、手撕代码和综合追问，最后生成报告",
+    detail: "AI 根据简历和回答判断下一问，覆盖项目、相关八股、手撕和综合追问",
     icon: Workflow,
   },
 ];
@@ -524,7 +524,7 @@ function App() {
       return;
     }
 
-    const emptySession = createEmptySession(context.mode === "full_mock" ? 6 : 5);
+    const emptySession = createEmptySession(context.mode === "full_mock" ? 8 : 5);
     replaceSession(context.sessionKey, emptySession);
     setError("");
 
@@ -626,7 +626,7 @@ function App() {
   }
 
   function resetTraining() {
-    replaceSession(activeSessionKey, createEmptySession(selectedMode === "full_mock" ? 6 : 5));
+    replaceSession(activeSessionKey, createEmptySession(selectedMode === "full_mock" ? 8 : 5));
     setError("");
     focusAnswerInput();
   }
@@ -676,7 +676,7 @@ function App() {
     },
     full_mock: {
       title: "上传简历，开始完整模拟",
-      body: "完整模拟会依次覆盖简历深挖、八股基础、手撕代码和综合追问，最后生成一份面试报告。",
+      body: "完整模拟会由 AI 判断下一问方向，覆盖简历深挖、简历相关八股、手撕代码和综合追问，每个板块至少两轮。",
     },
   }[selectedMode];
   const answerPlaceholder =
@@ -763,7 +763,7 @@ function App() {
         <>
           <div className="training-note">
             <strong>完整模拟流程</strong>
-            <span>需要简历。系统会按真实面试节奏覆盖简历深挖、八股基础、手撕代码和综合追问，结束后生成完整报告。</span>
+            <span>需要简历。AI 会根据简历和回答判断下一问方向，覆盖简历深挖、简历相关八股、手撕代码和综合追问，每个板块至少两轮，结束后生成完整报告。</span>
           </div>
 
           <div className="field-group">
