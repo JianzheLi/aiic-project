@@ -216,8 +216,9 @@ KNOWLEDGE_RULES = """
 2. 每轮只围绕当前分类和知识点问一个主问题，最多补充一个边界追问。
 3. 追问要能暴露理解深度：机制、公式、边界、复杂度、失败场景、指标差异或常见误区。
 4. 候选人回答后，先指出回答中不准确、缺失或表达不清的地方，再继续追问。
-5. 不要泛泛讲课，不要一次列十几个问题，不要替候选人完整作答。
-6. 输出中文，像真实技术面试官，但问题必须是本科实习候选人可回答的。
+5. 如果一个主题包含多个组件，每轮只选一个组件或一个对比点，不要要求候选人同时展开全链路。
+6. 不要泛泛讲课，不要一次列十几个问题，不要替候选人完整作答。
+7. 输出中文，像真实技术面试官，但问题必须是本科实习候选人可回答的。
 """.strip()
 
 
@@ -618,6 +619,7 @@ def build_knowledge_messages(payload: TrainingRequest, category: dict[str, Any],
         stage_instruction = """
 现在开始八股知识点训练。
 请围绕当前知识点提出第一道问题。问题要具体，要求候选人解释机制、边界或常见误区之一。
+如果当前知识点是 RAG、Transformer、搜广推链路等多层主题，本轮只选一个切面；不要要求同时说明所有层。
 只输出面试官这一轮要问的话。
 """.strip()
     else:
@@ -699,6 +701,8 @@ def critique_training_reply(reply: str, mode: TrainingMode, *, is_summary: bool)
         issues.append("该模式不应绑定简历或项目经历。")
     if mode == "coding" and any(term in reply for term in ("我运行了", "测试通过", "执行结果")):
         issues.append("手撕代码模式不能声称已经运行用户代码。")
+    if mode == "knowledge" and any(term in reply for term in ("每个层面", "各自", "分别", "同时")) and reply.count("、") >= 2:
+        issues.append("八股问题展开面太宽，应只选一个组件、一个对比点或一个坏例切面。")
     if reply.count("？") + reply.count("?") > 3:
         issues.append("一次问了太多问题，需要收敛。")
     return issues[:3]

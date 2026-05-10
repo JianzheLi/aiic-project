@@ -432,6 +432,25 @@ def test_training_knowledge_opening_without_resume(monkeypatch: pytest.MonkeyPat
     assert "候选人简历" not in prompt_text
 
 
+def test_training_knowledge_broad_question_is_rewritten(monkeypatch: pytest.MonkeyPatch) -> None:
+    calls: list[list[dict[str, str]]] = []
+
+    def fake_completion(messages: list[dict[str, str]], temperature: float = 0.7) -> str:
+        calls.append(messages)
+        if len(calls) == 1:
+            return "请分别说明 RAG 里 chunk、embedding、检索策略和 rerank 每个层面的关键点，以及它们各自会导致什么坏例？"
+        return "请只聚焦 chunk 切分：如果课程 PDF 章节边界不清，你会怎么设计 chunk 规则来减少相似章节混淆？"
+
+    monkeypatch.setattr(main, "request_chat_completion", fake_completion)
+
+    response = client.post("/training/message", json=training_payload(category="agent_llm"))
+
+    assert response.status_code == 200
+    assert len(calls) == 2
+    assert "展开面太宽" in calls[1][-1]["content"]
+    assert "只聚焦 chunk" in response.json()["reply"]
+
+
 def test_training_coding_opening_returns_problem(monkeypatch: pytest.MonkeyPatch) -> None:
     captured = stub_completion(monkeypatch, "请先实现 scaled dot-product attention，说明 q/k/v 的 shape、mask 处理方式、复杂度，然后贴出代码。")
 
