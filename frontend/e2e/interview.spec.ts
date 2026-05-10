@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
-const projectText =
-  "我做了一个基于 RAG 的课程问答系统，使用 FastAPI 提供后端接口，把课程 PDF 切分后写入向量库，通过 embedding 检索相关片段，再调用大模型生成回答。我主要负责后端接口、检索链路、Prompt 调优和 Docker 部署。";
+const resumeText =
+  "候选人：某高校计算机本科。\n技能：Python、FastAPI、Milvus、bge embedding、rerank、Docker。\n项目：智能课程问答系统，使用 FastAPI 提供后端接口，把课程 PDF 切分后写入向量库，通过 embedding 检索相关片段，再调用大模型生成回答。我主要负责 PDF 解析、chunk 策略、检索链路、Prompt 调优和 Docker 部署。";
 
 async function mockConfig(page: import("@playwright/test").Page) {
   await page.route("**/api/config", async (route) => {
@@ -9,10 +9,27 @@ async function mockConfig(page: import("@playwright/test").Page) {
       status: 200,
       contentType: "application/json",
       body: JSON.stringify({
-        model: "mock-model",
-        provider: "MockProvider",
-        api_base_url: "https://mock.local",
+        model: "deepseek-v4-pro",
+        provider: "DeepSeek",
+        api_base_url: "https://api.deepseek.com",
         api_key_configured: true,
+      }),
+    });
+  });
+}
+
+async function mockResumeExtract(page: import("@playwright/test").Page) {
+  await page.route("**/api/resume/extract", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        filename: "resume.txt",
+        content_type: "text/plain",
+        text: resumeText,
+        character_count: resumeText.length,
+        truncated: false,
+        warning: "",
       }),
     });
   });
@@ -23,20 +40,27 @@ async function mockInterview(page: import("@playwright/test").Page) {
     const request = route.request().postDataJSON();
     const isSummary = request.phase === "summary";
     const nextRound = request.phase === "opening" ? 1 : Math.min(request.round + 1, request.max_rounds);
+    const openingReply =
+      request.scenario === "backend_fundamentals"
+        ? "简历里你写了 Redis 和后端接口。请说明缓存和数据库一致性在你的项目里怎么保证，失败时怎么兜底？"
+        : request.scenario === "rag_agent_review"
+          ? "简历里你写了 PDF 解析、chunk 策略和 rerank。请说明 chunk 大小、重叠长度和 rerank 阈值是怎么定的，有没有坏例对比？"
+          : "简历里你写了课程问答系统。请说明你个人负责的链路、关键指标和一次失败路径。";
+
     await route.fulfill({
       status: 200,
       contentType: "application/json",
       body: JSON.stringify({
         reply: isSummary
-          ? "## 总评\n表达有基础，但项目指标不够清晰。\n\n## 最可能被问挂的 3 个点\n1. chunk 策略没有解释依据。\n2. 检索坏例没有量化。\n3. 部署稳定性没有监控。\n\n## 维度反馈\n\n| 维度 | 判断 | 证据 | 改进 |\n| --- | --- | --- | --- |\n| 项目可信度 | 中 | 说了 FastAPI 和向量检索 | 补充指标 |\n\n## 下一轮行动\n补齐坏例分析。\n\n## 下一轮练习题\n解释 chunk 大小怎么定。"
+          ? "## 总评\n表达有基础，但简历指标不够清晰。\n\n## 最可能被问挂的 3 个点\n1. chunk 策略没有解释依据。\n2. 检索坏例没有量化。\n3. 部署稳定性没有监控。\n\n## 维度反馈\n\n| 维度 | 判断 | 证据 | 改进 |\n| --- | --- | --- | --- |\n| 项目可信度 | 中 | 简历说了 FastAPI 和向量检索 | 补充指标 |\n\n## 下一轮行动\n补齐坏例分析。\n\n## 下一轮练习题\n解释 chunk 大小怎么定。"
           : request.phase === "opening"
-            ? "你提到做了 RAG 课程问答系统。请先说明你个人负责的检索链路里，chunk 大小和重叠长度是怎么定的？"
+            ? openingReply
             : "你说做过坏例分析。请给一个具体坏例，并说明你怎么判断问题出在检索还是生成？",
         phase: isSummary ? "completed" : "followup",
         round: isSummary ? request.round : nextRound,
         max_rounds: request.max_rounds,
         is_complete: isSummary,
-        model: "mock-model",
+        model: "deepseek-v4-pro",
       }),
     });
   });
@@ -44,27 +68,35 @@ async function mockInterview(page: import("@playwright/test").Page) {
 
 test.beforeEach(async ({ page }) => {
   await mockConfig(page);
+  await mockResumeExtract(page);
   await mockInterview(page);
 });
 
-test("runs the core interview and debrief flow", async ({ page }) => {
+test("uploads a resume and runs the core interview flow", async ({ page }) => {
   await page.goto("/");
 
   await expect(page.getByRole("heading", { name: "AI 模拟面试官" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "项目追问训练" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "简历追问训练" })).toBeVisible();
 
   await page.getByRole("button", { name: "开始面试" }).click();
-  await expect(page.getByRole("alert")).toContainText("至少 30 个字");
+  await expect(page.getByRole("alert")).toContainText("上传或粘贴至少 30 个字");
 
-  await page.getByLabel("项目经历").fill(projectText);
+  await page.getByLabel("上传简历文件").setInputFiles({
+    name: "resume.txt",
+    mimeType: "text/plain",
+    buffer: Buffer.from(resumeText),
+  });
+  await expect(page.getByText("resume.txt")).toBeVisible();
+  await expect(page.getByLabel("简历内容（可粘贴备用）")).toContainText("智能课程问答系统");
+
   await page.getByLabel("目标岗位").fill("AI 应用开发实习");
   await page.getByRole("radio", { name: /RAG\/Agent 项目真实性拷打/ }).click();
   await page.getByRole("button", { name: "开始面试" }).click();
 
-  await expect(page.getByText("chunk 大小和重叠长度")).toBeVisible();
+  await expect(page.getByText("chunk 大小")).toBeVisible();
   await expect(page.getByText("第 1 / 5 轮")).toBeVisible();
 
-  await page.getByLabel("你的回答").fill("我使用 500 字左右切块，重叠 80 字，主要根据课程章节长度和坏例做调整。");
+  await page.getByLabel("你的回答").fill("我用 500 字切块，重叠 80 字，主要根据课程章节和召回坏例调整。");
   await page.getByRole("button", { name: "发送回答" }).click();
 
   await expect(page.getByText("具体坏例")).toBeVisible();
@@ -73,6 +105,34 @@ test("runs the core interview and debrief flow", async ({ page }) => {
   await page.getByRole("button", { name: "结束并复盘" }).click();
   await expect(page.getByRole("heading", { name: "最可能被问挂的 3 个点" })).toBeVisible();
   await expect(page.getByLabel("面试复盘").getByText("部署稳定性没有监控。", { exact: true })).toBeVisible();
+});
+
+test("keeps independent conversations when switching scenarios", async ({ page }) => {
+  await page.goto("/");
+  await page.getByLabel("简历内容（可粘贴备用）").fill(resumeText);
+
+  await page.getByRole("radio", { name: /RAG\/Agent 项目真实性拷打/ }).click();
+  await page.getByRole("button", { name: "开始面试" }).click();
+  await expect(page.getByText("rerank 阈值")).toBeVisible();
+
+  await page.getByRole("radio", { name: /后端八股项目化追问/ }).click();
+  await expect(page.getByText("上传简历，开始被追问")).toBeVisible();
+  await page.getByRole("button", { name: "开始面试" }).click();
+  await expect(page.getByText("缓存和数据库一致性")).toBeVisible();
+
+  await page.getByRole("radio", { name: /RAG\/Agent 项目真实性拷打/ }).click();
+  await expect(page.getByText("rerank 阈值")).toBeVisible();
+  await expect(page.getByText("缓存和数据库一致性")).not.toBeVisible();
+});
+
+test("clears all scenario sessions after replacing resume", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "RAG 简历" }).click();
+  await page.getByRole("button", { name: "开始面试" }).click();
+  await expect(page.getByText("个人负责的链路")).toBeVisible();
+
+  await page.getByLabel("简历内容（可粘贴备用）").fill(`${resumeText}\n新增项目：校园二手交易平台。`);
+  await expect(page.getByText("上传简历，开始被追问")).toBeVisible();
 });
 
 test("keeps context and shows a readable backend error", async ({ page }) => {
@@ -86,11 +146,11 @@ test("keeps context and shows a readable backend error", async ({ page }) => {
   });
 
   await page.goto("/");
-  await page.getByLabel("项目经历").fill(projectText);
+  await page.getByLabel("简历内容（可粘贴备用）").fill(resumeText);
   await page.getByRole("button", { name: "开始面试" }).click();
 
   await expect(page.getByRole("alert")).toContainText("模型服务请求超时");
-  await expect(page.getByLabel("项目经历")).toHaveValue(projectText);
+  await expect(page.getByLabel("简历内容（可粘贴备用）")).toHaveValue(resumeText);
 });
 
 test("guards rapid repeated start clicks", async ({ page }) => {
@@ -103,18 +163,18 @@ test("guards rapid repeated start clicks", async ({ page }) => {
       status: 200,
       contentType: "application/json",
       body: JSON.stringify({
-        reply: "请说明你在项目中的个人贡献。",
+        reply: "请说明简历里课程问答系统的个人贡献。",
         phase: "followup",
         round: 1,
         max_rounds: 5,
         is_complete: false,
-        model: "mock-model",
+        model: "deepseek-v4-pro",
       }),
     });
   });
 
   await page.goto("/");
-  await page.getByLabel("项目经历").fill(projectText);
+  await page.getByLabel("简历内容（可粘贴备用）").fill(resumeText);
   const startButton = page.getByRole("button", { name: "开始面试" });
   await startButton.dispatchEvent("click");
   await startButton.dispatchEvent("click");

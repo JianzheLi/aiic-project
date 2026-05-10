@@ -1,10 +1,11 @@
-import { FormEvent, KeyboardEvent, useEffect, useMemo, useRef, useState } from "react";
+import { ChangeEvent, FormEvent, KeyboardEvent, useEffect, useMemo, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import {
   AlertTriangle,
   Bot,
   ClipboardList,
+  FileText,
   Loader2,
   Play,
   RefreshCw,
@@ -12,6 +13,7 @@ import {
   Send,
   Server,
   Sparkles,
+  Upload,
   UserRound,
   Wifi,
   Workflow,
@@ -28,6 +30,15 @@ type InterviewMessage = {
   content: string;
 };
 
+type ScenarioSession = {
+  messages: InterviewMessage[];
+  answerInput: string;
+  debrief: string;
+  phase: InterviewPhase;
+  round: number;
+  maxRounds: number;
+};
+
 type InterviewResponse = {
   reply: string;
   phase: InterviewPhase;
@@ -35,6 +46,15 @@ type InterviewResponse = {
   max_rounds: number;
   is_complete: boolean;
   model: string;
+};
+
+type ResumeExtractResponse = {
+  filename: string;
+  content_type: string;
+  text: string;
+  character_count: number;
+  truncated: boolean;
+  warning: string;
 };
 
 type ConfigResponse = {
@@ -49,6 +69,13 @@ type ScenarioOption = {
   title: string;
   description: string;
   icon: typeof ClipboardList;
+};
+
+type SampleResume = {
+  label: string;
+  filename: string;
+  jobTarget: string;
+  text: string;
 };
 
 const scenarios: ScenarioOption[] = [
@@ -72,8 +99,26 @@ const scenarios: ScenarioOption[] = [
   },
 ];
 
-const sampleProject =
-  "我做了一个基于 RAG 的课程问答系统，使用 FastAPI 提供后端接口，把课程 PDF 切分后写入向量库，通过 embedding 检索相关片段，再调用大模型生成回答。我主要负责后端接口、检索链路、Prompt 调优和 Docker 部署，做过一些坏例分析，比如相似课程章节被召回导致答案混淆。";
+const sampleResumes: SampleResume[] = [
+  {
+    label: "RAG 简历",
+    filename: "sample-rag-resume.txt",
+    jobTarget: "AI 应用开发实习",
+    text: "候选人：某高校计算机本科，GPA 3.7/4.0。\n技能：Python、FastAPI、Milvus、bge embedding、rerank、Docker、LangGraph。\n项目一：智能课程问答系统。使用 FastAPI 提供后端接口，把课程 PDF 解析后切分写入向量库，通过 embedding 检索相关片段，再调用 DeepSeek API 生成回答。我负责 PDF 解析、chunk 策略、检索链路、Prompt 调优和 Docker 部署。做过坏例分析，比如相似课程章节召回导致答案混淆。\n项目二：多 Agent 简历修改助手。使用 LangGraph 管理规划、检索、修改、审阅节点，负责状态对象设计和工具调用。",
+  },
+  {
+    label: "后端简历",
+    filename: "sample-backend-resume.txt",
+    jobTarget: "后端开发实习",
+    text: "候选人：计算机本科。\n技能：Java、Spring Boot、MySQL、Redis、RabbitMQ、Docker。\n项目：校园二手交易平台。负责商品发布、订单、支付回调、库存扣减、缓存和消息异步通知。使用 Redis 缓存商品详情，RabbitMQ 发送订单状态变更通知，MySQL 保存订单和库存。写过 Docker Compose 部署，做过压测但简历没有写清楚基线和指标。",
+  },
+  {
+    label: "全栈/OJ 简历",
+    filename: "sample-oj-resume.txt",
+    jobTarget: "全栈开发实习",
+    text: "候选人：软件工程本科。\n技能：React、FastAPI、PostgreSQL、Redis、Docker、Python。\n项目：在线判题系统 OJ。负责题目管理、提交队列、判题 worker、结果回写和权限控制。简历写 QPS 提升 40%，但没有说明优化前基线、压测方法和瓶颈定位。系统通过 Docker 部署，Redis 用于提交状态缓存。",
+  },
+];
 
 const appVersion = import.meta.env.VITE_APP_VERSION || "dev";
 const buildTime = import.meta.env.VITE_BUILD_TIME || "local";
@@ -91,29 +136,70 @@ function toApiMessages(messages: InterviewMessage[]) {
   return messages.map(({ role, content }) => ({ role, content }));
 }
 
+function createEmptySession(): ScenarioSession {
+  return {
+    messages: [],
+    answerInput: "",
+    debrief: "",
+    phase: "opening",
+    round: 0,
+    maxRounds: 5,
+  };
+}
+
+function createInitialSessions(): Record<ScenarioId, ScenarioSession> {
+  return {
+    project_deep_dive: createEmptySession(),
+    backend_fundamentals: createEmptySession(),
+    rag_agent_review: createEmptySession(),
+  };
+}
+
+function hasAnyStartedSession(sessions: Record<ScenarioId, ScenarioSession>) {
+  return Object.values(sessions).some((session) => session.messages.length > 0 || session.phase !== "opening");
+}
+
 function App() {
   const [scenario, setScenario] = useState<ScenarioId>("project_deep_dive");
-  const [projectContext, setProjectContext] = useState("");
+  const [resumeText, setResumeText] = useState("");
+  const [resumeFilename, setResumeFilename] = useState("");
+  const [resumeWarning, setResumeWarning] = useState("");
   const [jobTarget, setJobTarget] = useState("后端开发实习");
-  const [messages, setMessages] = useState<InterviewMessage[]>([]);
-  const [answerInput, setAnswerInput] = useState("");
-  const [debrief, setDebrief] = useState("");
-  const [phase, setPhase] = useState<InterviewPhase>("opening");
-  const [round, setRound] = useState(0);
-  const [maxRounds, setMaxRounds] = useState(5);
+  const [sessionsByScenario, setSessionsByScenario] = useState<Record<ScenarioId, ScenarioSession>>(createInitialSessions);
   const [error, setError] = useState("");
   const [modelName, setModelName] = useState("");
   const [providerName, setProviderName] = useState("DeepSeek");
   const [connectionState, setConnectionState] = useState<ConnectionState>("checking");
   const [isLoading, setIsLoading] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const answerRef = useRef<HTMLTextAreaElement>(null);
   const requestInFlightRef = useRef(false);
   const apiBaseUrl = useMemo(getApiBaseUrl, []);
 
   const activeScenario = scenarios.find((item) => item.id === scenario) ?? scenarios[0];
-  const hasStarted = messages.length > 0 || phase !== "opening";
-  const canStart = !isLoading;
-  const canAnswer = hasStarted && phase !== "completed" && answerInput.trim().length > 0 && !isLoading;
+  const activeSession = sessionsByScenario[scenario];
+  const hasStarted = activeSession.messages.length > 0 || activeSession.phase !== "opening";
+  const canStart = !isLoading && !isUploading;
+  const canAnswer = hasStarted && activeSession.phase !== "completed" && activeSession.answerInput.trim().length > 0 && !isLoading;
+  const resumeCharCount = resumeText.trim().length;
+
+  function replaceScenarioSession(scenarioId: ScenarioId, nextSession: ScenarioSession) {
+    setSessionsByScenario((current) => ({ ...current, [scenarioId]: nextSession }));
+  }
+
+  function resetAllSessions() {
+    setSessionsByScenario(createInitialSessions());
+  }
+
+  function updateResume(nextText: string, nextFilename = resumeFilename, nextWarning = "") {
+    setResumeText(nextText);
+    setResumeFilename(nextFilename);
+    setResumeWarning(nextWarning);
+    setError("");
+    if (hasAnyStartedSession(sessionsByScenario)) {
+      resetAllSessions();
+    }
+  }
 
   async function loadConfig() {
     setConnectionState("checking");
@@ -154,18 +240,56 @@ function App() {
     setIsLoading(false);
   }
 
-  async function requestInterview(nextPhase: InterviewPhase, nextRound: number, nextMessages: InterviewMessage[]) {
+  async function uploadResume(file: File) {
+    if (isLoading || isUploading) {
+      return;
+    }
+    setIsUploading(true);
+    setError("");
+    setResumeWarning("");
+
+    const formData = new FormData();
+    formData.append("file", file);
+    try {
+      const response = await fetch(`${apiBaseUrl}/resume/extract`, {
+        method: "POST",
+        body: formData,
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.detail || "简历解析失败，请换一个文件或直接粘贴简历文本。");
+      }
+      const resumeData = data as ResumeExtractResponse;
+      updateResume(resumeData.text, resumeData.filename, resumeData.warning);
+    } catch (caughtError) {
+      const message = caughtError instanceof Error ? caughtError.message : "简历解析失败，请稍后重试。";
+      setError(message);
+    } finally {
+      setIsUploading(false);
+    }
+  }
+
+  function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (file) {
+      void uploadResume(file);
+    }
+    event.target.value = "";
+  }
+
+  async function requestInterview(nextPhase: InterviewPhase, nextRound: number, nextMessages: InterviewMessage[], scenarioId: ScenarioId) {
     const response = await fetch(`${apiBaseUrl}/interview/message`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        scenario,
+        scenario: scenarioId,
         phase: nextPhase,
         round: nextRound,
-        max_rounds: maxRounds,
-        project_context: projectContext.trim(),
+        max_rounds: sessionsByScenario[scenarioId].maxRounds,
+        resume_text: resumeText.trim(),
+        resume_filename: resumeFilename,
         job_target: jobTarget.trim(),
         messages: toApiMessages(nextMessages),
       }),
@@ -177,44 +301,44 @@ function App() {
     return data as InterviewResponse;
   }
 
-  function applyInterviewResponse(data: InterviewResponse, nextMessages: InterviewMessage[]) {
+  function applyInterviewResponse(data: InterviewResponse, nextMessages: InterviewMessage[], scenarioId: ScenarioId) {
     const assistantMessage: InterviewMessage = {
       id: createMessageId(),
       role: "assistant",
       content: data.reply,
     };
     const allMessages = [...nextMessages, assistantMessage];
-    setMessages(allMessages);
-    setPhase(data.phase);
-    setRound(data.round);
-    setMaxRounds(data.max_rounds);
+    replaceScenarioSession(scenarioId, {
+      ...sessionsByScenario[scenarioId],
+      messages: allMessages,
+      answerInput: "",
+      debrief: data.is_complete ? data.reply : sessionsByScenario[scenarioId].debrief,
+      phase: data.phase,
+      round: data.round,
+      maxRounds: data.max_rounds,
+    });
     setModelName(data.model);
     setConnectionState("ready");
-    if (data.is_complete) {
-      setDebrief(data.reply);
-    }
   }
 
   async function startInterview() {
     if (!beginRequest()) {
       return;
     }
-    if (projectContext.trim().length < 30) {
+    if (resumeText.trim().length < 30) {
       finishRequest();
-      setError("请先粘贴至少 30 个字的项目经历，面试官才能围绕细节追问。");
+      setError("请先上传或粘贴至少 30 个字的简历内容，面试官才能围绕简历细节追问。");
       return;
     }
 
+    const scenarioId = scenario;
+    const emptySession = createEmptySession();
+    replaceScenarioSession(scenarioId, emptySession);
     setError("");
-    setDebrief("");
-    setMessages([]);
-    setAnswerInput("");
-    setPhase("opening");
-    setRound(0);
 
     try {
-      const data = await requestInterview("opening", 0, []);
-      applyInterviewResponse(data, []);
+      const data = await requestInterview("opening", 0, [], scenarioId);
+      applyInterviewResponse(data, [], scenarioId);
       setTimeout(() => answerRef.current?.focus(), 0);
     } catch (caughtError) {
       const message = caughtError instanceof Error ? caughtError.message : "请求失败，请稍后重试。";
@@ -226,24 +350,24 @@ function App() {
 
   async function sendAnswer(event?: FormEvent<HTMLFormElement>) {
     event?.preventDefault();
-    const content = answerInput.trim();
-    if (!content || phase === "completed" || !beginRequest()) {
+    const content = activeSession.answerInput.trim();
+    if (!content || activeSession.phase === "completed" || !beginRequest()) {
       return;
     }
 
+    const scenarioId = scenario;
     const userMessage: InterviewMessage = {
       id: createMessageId(),
       role: "user",
       content,
     };
-    const nextMessages = [...messages, userMessage];
-    setMessages(nextMessages);
-    setAnswerInput("");
+    const nextMessages = [...activeSession.messages, userMessage];
+    replaceScenarioSession(scenarioId, { ...activeSession, messages: nextMessages, answerInput: "" });
     setError("");
 
     try {
-      const data = await requestInterview("followup", round, nextMessages);
-      applyInterviewResponse(data, nextMessages);
+      const data = await requestInterview("followup", activeSession.round, nextMessages, scenarioId);
+      applyInterviewResponse(data, nextMessages, scenarioId);
     } catch (caughtError) {
       const message = caughtError instanceof Error ? caughtError.message : "请求失败，请稍后重试。";
       setError(message);
@@ -257,24 +381,24 @@ function App() {
     if (!hasStarted || !beginRequest()) {
       return;
     }
-    const pendingAnswer = answerInput.trim()
+    const scenarioId = scenario;
+    const pendingAnswer = activeSession.answerInput.trim()
       ? [
-          ...messages,
+          ...activeSession.messages,
           {
             id: createMessageId(),
             role: "user" as const,
-            content: answerInput.trim(),
+            content: activeSession.answerInput.trim(),
           },
         ]
-      : messages;
+      : activeSession.messages;
 
-    setMessages(pendingAnswer);
-    setAnswerInput("");
+    replaceScenarioSession(scenarioId, { ...activeSession, messages: pendingAnswer, answerInput: "" });
     setError("");
 
     try {
-      const data = await requestInterview("summary", round, pendingAnswer);
-      applyInterviewResponse(data, pendingAnswer);
+      const data = await requestInterview("summary", activeSession.round, pendingAnswer, scenarioId);
+      applyInterviewResponse(data, pendingAnswer, scenarioId);
     } catch (caughtError) {
       const message = caughtError instanceof Error ? caughtError.message : "请求失败，请稍后重试。";
       setError(message);
@@ -291,14 +415,18 @@ function App() {
   }
 
   function resetInterview() {
-    setMessages([]);
-    setAnswerInput("");
-    setDebrief("");
-    setPhase("opening");
-    setRound(0);
-    setMaxRounds(5);
+    replaceScenarioSession(scenario, createEmptySession());
     setError("");
     answerRef.current?.focus();
+  }
+
+  function updateAnswerInput(value: string) {
+    replaceScenarioSession(scenario, { ...activeSession, answerInput: value });
+  }
+
+  function useSampleResume(sample: SampleResume) {
+    setJobTarget(sample.jobTarget);
+    updateResume(sample.text, sample.filename);
   }
 
   const statusText = {
@@ -319,7 +447,7 @@ function App() {
             <div>
               <p className="eyebrow">AI Agent Challenge</p>
               <h1>AI 模拟面试官</h1>
-              <p className="brand-subtitle">把项目经历练到经得起追问</p>
+              <p className="brand-subtitle">让简历经得起技术追问</p>
             </div>
           </div>
 
@@ -340,6 +468,7 @@ function App() {
             <div className="scenario-list" role="radiogroup" aria-label="训练场景">
               {scenarios.map((item) => {
                 const Icon = item.icon;
+                const session = sessionsByScenario[item.id];
                 return (
                   <button
                     aria-checked={scenario === item.id}
@@ -352,7 +481,7 @@ function App() {
                     <Icon size={17} />
                     <span>
                       <strong>{item.title}</strong>
-                      <small>{item.description}</small>
+                      <small>{session.messages.length ? `已进行 ${session.round} 轮` : item.description}</small>
                     </span>
                   </button>
                 );
@@ -360,15 +489,34 @@ function App() {
             </div>
           </div>
 
-          <label className="field-group" htmlFor="project-context">
-            <span className="field-label">项目经历</span>
+          <div className="field-group">
+            <span className="field-label">上传简历</span>
+            <label className="upload-card" htmlFor="resume-file">
+              <Upload size={18} />
+              <span>{isUploading ? "正在解析..." : resumeFilename || "选择 PDF / DOCX / TXT 简历"}</span>
+              <small>{resumeCharCount ? `${resumeCharCount} 字符已就绪` : "扫描 PDF 暂不支持，可改为粘贴文本"}</small>
+            </label>
+            <input
+              id="resume-file"
+              aria-label="上传简历文件"
+              className="file-input"
+              type="file"
+              accept=".pdf,.docx,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain"
+              onChange={handleFileChange}
+              disabled={isLoading || isUploading}
+            />
+            {resumeWarning ? <p className="warning-note">{resumeWarning}</p> : null}
+          </div>
+
+          <label className="field-group" htmlFor="resume-text">
+            <span className="field-label">简历内容（可粘贴备用）</span>
             <textarea
-              id="project-context"
-              value={projectContext}
-              onChange={(event) => setProjectContext(event.target.value)}
-              placeholder="粘贴你的简历项目、课程项目或实习项目经历..."
+              id="resume-text"
+              value={resumeText}
+              onChange={(event) => updateResume(event.target.value, resumeFilename || "manual-resume.txt")}
+              placeholder="上传失败时，可以直接粘贴简历全文。建议包含教育经历、技能、项目、实习和目标岗位。"
               rows={7}
-              disabled={isLoading}
+              disabled={isLoading || isUploading}
             />
           </label>
 
@@ -379,18 +527,23 @@ function App() {
               value={jobTarget}
               onChange={(event) => setJobTarget(event.target.value)}
               placeholder="例如：后端开发实习、AI 应用开发实习"
-              disabled={isLoading}
+              disabled={isLoading || isUploading}
             />
           </label>
+
+          <div className="sample-buttons" aria-label="样例简历">
+            {sampleResumes.map((sample) => (
+              <button className="secondary-button compact-text" key={sample.filename} type="button" onClick={() => useSampleResume(sample)} disabled={isLoading || isUploading}>
+                <FileText size={15} />
+                <span>{sample.label}</span>
+              </button>
+            ))}
+          </div>
 
           <div className="button-row">
             <button className="primary-button" type="button" onClick={startInterview} disabled={!canStart}>
               {isLoading && !hasStarted ? <Loader2 className="spin" size={17} /> : <Play size={17} />}
-              <span>开始面试</span>
-            </button>
-            <button className="secondary-button" type="button" onClick={() => setProjectContext(sampleProject)} disabled={isLoading}>
-              <ClipboardList size={16} />
-              <span>填入样例</span>
+              <span>{hasStarted ? "重新开始该场景" : "开始面试"}</span>
             </button>
           </div>
 
@@ -404,27 +557,27 @@ function App() {
           <header className="panel-header">
             <div>
               <p className="section-label">{activeScenario.title}</p>
-              <h2>项目追问训练</h2>
+              <h2>简历追问训练</h2>
             </div>
             <div className="round-meter" aria-label="面试轮次">
               <span>
-                第 {round} / {maxRounds} 轮
+                第 {activeSession.round} / {activeSession.maxRounds} 轮
               </span>
-              <strong>{phase === "completed" ? "已复盘" : hasStarted ? "进行中" : "待开始"}</strong>
+              <strong>{activeSession.phase === "completed" ? "已复盘" : hasStarted ? "进行中" : "待开始"}</strong>
             </div>
           </header>
 
           <div className="message-timeline" aria-live="polite">
-            {messages.length === 0 ? (
+            {activeSession.messages.length === 0 ? (
               <div className="empty-state">
                 <div className="empty-icon">
                   <Bot size={26} />
                 </div>
-                <h3>贴项目，开始被追问</h3>
-                <p>面试官会围绕项目细节连续追问，并在结束后指出最容易被问挂的点。</p>
+                <h3>上传简历，开始被追问</h3>
+                <p>每个训练场景会保留独立对话；切换场景后可以从同一份简历开启不同面试。</p>
               </div>
             ) : (
-              messages.map((message) => (
+              activeSession.messages.map((message) => (
                 <article className={`message message-${message.role}`} key={message.id}>
                   <span className="avatar">{message.role === "user" ? <UserRound size={16} /> : <Bot size={16} />}</span>
                   <div>
@@ -459,12 +612,12 @@ function App() {
               ref={answerRef}
               id="answer-input"
               aria-label="你的回答"
-              value={answerInput}
-              onChange={(event) => setAnswerInput(event.target.value)}
+              value={activeSession.answerInput}
+              onChange={(event) => updateAnswerInput(event.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder={hasStarted ? "输入你的回答，Enter 发送，Shift+Enter 换行" : "先填写项目经历并开始面试"}
+              placeholder={hasStarted ? "输入你的回答，Enter 发送，Shift+Enter 换行" : "先上传或粘贴简历并开始该场景面试"}
               rows={3}
-              disabled={isLoading || !hasStarted || phase === "completed"}
+              disabled={isLoading || !hasStarted || activeSession.phase === "completed"}
             />
             <div className="composer-actions">
               <button className="send-button" type="submit" disabled={!canAnswer}>
@@ -477,7 +630,7 @@ function App() {
               </button>
               <button className="ghost-button" type="button" onClick={resetInterview} disabled={isLoading}>
                 <RotateCcw size={16} />
-                <span>重新练一次</span>
+                <span>重练该场景</span>
               </button>
             </div>
           </form>
@@ -488,15 +641,15 @@ function App() {
             <p className="section-label">Debrief</p>
             <h2>结构化复盘</h2>
           </header>
-          {debrief ? (
+          {activeSession.debrief ? (
             <div className="markdown-body">
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>{debrief}</ReactMarkdown>
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>{activeSession.debrief}</ReactMarkdown>
             </div>
           ) : (
             <div className="debrief-empty">
               <ClipboardList size={28} />
               <h3>复盘会出现在这里</h3>
-              <p>结束面试后，你会看到总评、挂点、维度反馈和下一轮行动。</p>
+              <p>结束当前场景后，你会看到总评、挂点、维度反馈和下一轮行动。</p>
             </div>
           )}
         </aside>

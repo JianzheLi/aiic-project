@@ -256,6 +256,72 @@ h3 {
   background: var(--blue-soft);
 }
 
+.upload-card {
+  min-height: 78px;
+  padding: 13px;
+  display: grid;
+  grid-template-columns: 22px 1fr;
+  gap: 8px 10px;
+  color: var(--ink);
+  border: 1px dashed #9fb4d8;
+  border-radius: 8px;
+  background: #ffffff;
+  cursor: pointer;
+}
+
+.upload-card:hover {
+  border-color: var(--blue);
+  background: var(--blue-soft);
+}
+
+.upload-card svg {
+  margin-top: 2px;
+  color: var(--blue);
+}
+
+.upload-card span,
+.upload-card small {
+  display: block;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.upload-card span {
+  font-weight: 900;
+}
+
+.upload-card small {
+  grid-column: 2;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.file-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.warning-note {
+  color: var(--amber);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.sample-buttons {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+
+.compact-text {
+  min-height: 38px;
+  justify-content: flex-start;
+  font-size: 13px;
+}
+
 textarea,
 input {
   width: 100%;
