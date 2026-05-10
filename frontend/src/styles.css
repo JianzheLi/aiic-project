@@ -591,8 +591,10 @@ input:disabled {
 
 .interview-panel {
   min-width: 0;
+  min-height: 0;
   display: grid;
-  grid-template-rows: auto 1fr auto auto;
+  grid-template-rows: auto minmax(0, 1fr) auto auto;
+  overflow: hidden;
   background: var(--panel);
 }
 
@@ -635,6 +637,7 @@ input:disabled {
   min-height: 0;
   padding: 24px;
   overflow-y: auto;
+  overscroll-behavior: contain;
   display: flex;
   flex-direction: column;
   gap: 15px;
@@ -894,6 +897,7 @@ input:disabled {
   display: grid;
   grid-template-columns: 1fr;
   gap: 12px;
+  flex: 0 0 auto;
   border-top: 1px solid var(--line);
   background: #ffffff;
   scroll-margin-bottom: 24px;
@@ -1008,7 +1012,6 @@ input:disabled {
     min-height: calc(100vh - 48px);
     grid-template-columns: 320px minmax(0, 1fr);
     grid-template-rows: minmax(680px, calc(100vh - 48px)) auto;
-    overflow: visible;
   }
 
   .debrief-panel {
@@ -1037,8 +1040,7 @@ input:disabled {
     height: auto;
     min-height: 100vh;
     grid-template-columns: 1fr;
-    grid-template-rows: auto minmax(620px, auto) auto;
-    overflow: visible;
+    grid-template-rows: auto minmax(620px, 100vh) auto;
     border: 0;
     border-radius: 0;
   }
@@ -1067,11 +1069,8 @@ input:disabled {
   }
 
   .interview-panel {
-    min-height: 0;
-  }
-
-  .message-timeline {
-    overflow: visible;
+    height: 100vh;
+    max-height: 100vh;
   }
 
   .panel-header {

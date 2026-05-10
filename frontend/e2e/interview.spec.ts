@@ -302,3 +302,21 @@ test("allows scrolling to the composer on a short mobile viewport", async ({ pag
   await page.getByLabel("你的回答").fill("用矩阵乘法算 attention score，再做缩放、mask 和 softmax。");
   await expect(page.getByRole("button", { name: "提交代码" })).toBeVisible();
 });
+
+test("keeps the composer fixed while a long conversation scrolls inside the panel", async ({ page }) => {
+  await page.setViewportSize({ width: 900, height: 700 });
+  await page.goto("/");
+  await page.getByRole("button", { name: /八股知识点/ }).click();
+  await page.getByRole("button", { name: /开始八股知识点/ }).click();
+
+  for (let index = 0; index < 5; index += 1) {
+    await page.getByLabel("你的回答").fill(`第 ${index + 1} 轮回答：我会先说明概念，再补充边界、坏例、日志和验证方式。`);
+    await page.getByRole("button", { name: "发送回答" }).click();
+    await expect(page.getByText("没有区分 recall").last()).toBeVisible();
+  }
+
+  const timelineScrolls = await page.locator(".message-timeline").evaluate((element) => element.scrollHeight > element.clientHeight);
+  expect(timelineScrolls).toBe(true);
+  await expect(page.getByLabel("你的回答")).toBeInViewport();
+  await expect(page.getByRole("button", { name: "发送回答" })).toBeInViewport();
+});
