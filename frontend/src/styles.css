@@ -128,7 +128,7 @@ h3 {
 .mode-grid {
   align-self: center;
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 16px;
 }
 
@@ -896,6 +896,7 @@ input:disabled {
   gap: 12px;
   border-top: 1px solid var(--line);
   background: #ffffff;
+  scroll-margin-bottom: 24px;
 }
 
 .answer-composer textarea {
@@ -1007,6 +1008,7 @@ input:disabled {
     min-height: calc(100vh - 48px);
     grid-template-columns: 320px minmax(0, 1fr);
     grid-template-rows: minmax(680px, calc(100vh - 48px)) auto;
+    overflow: visible;
   }
 
   .debrief-panel {
@@ -1017,7 +1019,7 @@ input:disabled {
   }
 
   .mode-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .mode-card {
@@ -1028,12 +1030,15 @@ input:disabled {
 @media (max-width: 820px) {
   .app-shell {
     padding: 0;
+    align-items: flex-start;
   }
 
   .interview-workspace {
+    height: auto;
     min-height: 100vh;
     grid-template-columns: 1fr;
     grid-template-rows: auto minmax(620px, auto) auto;
+    overflow: visible;
     border: 0;
     border-radius: 0;
   }
@@ -1062,7 +1067,11 @@ input:disabled {
   }
 
   .interview-panel {
-    min-height: 640px;
+    min-height: 0;
+  }
+
+  .message-timeline {
+    overflow: visible;
   }
 
   .panel-header {
@@ -1114,6 +1123,16 @@ input:disabled {
   .ghost-button,
   .send-button {
     width: 100%;
+  }
+
+  .mode-card {
+    min-height: 150px;
+  }
+}
+
+@media (max-width: 560px) {
+  .mode-grid {
+    grid-template-columns: 1fr;
   }
 
   .mode-card {

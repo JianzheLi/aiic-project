@@ -1,6 +1,6 @@
 # AI 模拟面试官
 
-面向中国本科生技术实习面试准备的 AI 模拟面试产品。产品现在提供八股知识点、简历经历追问和手撕代码三个训练入口：八股不需要简历，简历模式支持 PDF/DOCX/TXT 上传，手撕代码覆盖 LeetCode 高频算法和常见 AI 算子实现。每个入口都会连续追问，并在结束后输出结构化复盘。
+面向中国本科生技术实习面试准备的 AI 模拟面试产品。产品现在提供八股知识点、简历经历追问、手撕代码和完整模拟四个训练入口：前三个是专项强化，完整模拟会串起简历深挖、八股基础、手撕代码和综合追问，并在结束后生成一份面试报告。
 
 当前公网 demo：
 
@@ -10,9 +10,10 @@ http://8.139.254.60:3000/
 
 ## 核心功能
 
-- 3 个训练入口：首页选择八股知识点、简历经历、手撕代码，进入相互独立的训练界面。
+- 4 个训练入口：首页选择八股知识点、简历经历、手撕代码、完整模拟，进入相互独立的训练界面。
 - 八股分类：后端/数据库、搜广推、Agent/LLM、AI 算法，覆盖纯知识点追问和回答漏洞反馈。
 - 手撕代码：内置 LeetCode 高频题和 AI 算子题，支持粘贴思路/代码后做静态评审。
+- 完整模拟：基于简历按真实面试节奏覆盖项目、基础、手撕和综合追问，结束后生成 Markdown 面试报告。
 - 简历驱动：支持上传 PDF/DOCX/TXT，文字型 PDF 优先用 PyMuPDF + pypdf 提取文本层，扫描 PDF 才尝试 OCR，可粘贴文本兜底。
 - 本地 OCR：文本型 PDF 直接抽取，扫描 PDF 会尝试 Tesseract OCR 兜底。
 - Agentic RAG：每轮从资料卡检索技术依据，生成后用 critic 规则检查泛泛追问并重写。
@@ -56,7 +57,7 @@ http://8.139.254.60:3000/
 }
 ```
 
-简历模式把 `mode` 设为 `resume`，`category` 使用 `project_deep_dive`、`backend_fundamentals` 或 `rag_agent_review`，并传入 `resume_text`、`resume_filename` 和 `job_target`。手撕代码模式把 `mode` 设为 `coding`，`category` 使用 `leetcode_core` 或 `ai_ops`，提交答案时传入 `code_answer`。
+简历模式把 `mode` 设为 `resume`，`category` 使用 `project_deep_dive`、`backend_fundamentals` 或 `rag_agent_review`，并传入 `resume_text`、`resume_filename` 和 `job_target`。手撕代码模式把 `mode` 设为 `coding`，`category` 使用 `leetcode_core` 或 `ai_ops`，提交答案时传入 `code_answer`。完整模拟把 `mode` 设为 `full_mock`，`category` 使用 `full_mock`，必须传入简历文本。
 
 响应示例：
 

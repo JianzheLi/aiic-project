@@ -518,6 +518,65 @@ def test_training_resume_mode_reuses_resume_workflow(monkeypatch: pytest.MonkeyP
     assert "候选人简历" in prompt_text
 
 
+def test_training_full_mock_opening_requires_resume_context(monkeypatch: pytest.MonkeyPatch) -> None:
+    captured = stub_completion(monkeypatch, "你简历里写了课程问答系统。请说明你个人负责的检索链路，以及一次你实际处理过的坏例。")
+
+    response = client.post(
+        "/training/message",
+        json=training_payload(
+            mode="full_mock",
+            category="full_mock",
+            resume_text="候选人简历：RAG 课程问答系统，负责 FastAPI、Milvus、chunk、rerank 和 Docker 部署。",
+            job_target="AI 应用开发实习",
+            max_rounds=6,
+        ),
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["phase"] == "followup"
+    assert data["round"] == 1
+    assert data["max_rounds"] == 6
+    assert data["source_cards"]
+    prompt_text = "\n".join(message["content"] for message in captured["messages"])  # type: ignore[index]
+    assert "完整模拟面试" in prompt_text
+    assert "简历经历深挖" in prompt_text
+    assert "候选人简历" in prompt_text
+
+
+def test_training_full_mock_summary_returns_report(monkeypatch: pytest.MonkeyPatch) -> None:
+    captured = stub_completion(monkeypatch, "## 面试结论\n中。\n\n## 维度评分\n\n| 维度 | 评级 | 证据 | 主要问题 | 改进动作 |\n| --- | --- | --- | --- | --- |\n")
+
+    response = client.post(
+        "/training/message",
+        json=training_payload(
+            mode="full_mock",
+            category="full_mock",
+            phase="summary",
+            round=4,
+            max_rounds=6,
+            resume_text="候选人简历：后端交易平台，负责 Redis、MySQL、MQ。",
+            messages=[{"role": "user", "content": "我负责缓存和订单链路。"}],
+        ),
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["phase"] == "completed"
+    assert data["is_complete"] is True
+    assert "## 面试结论" in data["reply"]
+    prompt_text = "\n".join(message["content"] for message in captured["messages"])  # type: ignore[index]
+    assert "完整模拟面试" in prompt_text
+    assert "维度评分" in prompt_text
+
+
+def test_training_full_mock_rejects_missing_resume() -> None:
+    response = client.post("/training/message", json=training_payload(mode="full_mock", category="full_mock"))
+
+    assert response.status_code == 422
+    assert "完整模拟需要先上传或粘贴简历内容" in response.json()["detail"]
+
+
 def test_training_rejects_invalid_category() -> None:
     response = client.post("/training/message", json=training_payload(mode="coding", category="unknown"))
 

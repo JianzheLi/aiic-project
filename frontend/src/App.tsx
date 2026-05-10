@@ -29,7 +29,7 @@ import {
 
 type ChatRole = "user" | "assistant";
 type ConnectionState = "checking" | "ready" | "missing-key" | "error";
-type TrainingMode = "knowledge" | "resume" | "coding";
+type TrainingMode = "knowledge" | "resume" | "coding" | "full_mock";
 type KnowledgeCategoryId = "backend_database" | "search_ads_rec" | "agent_llm" | "ai_algorithm";
 type ResumeScenarioId = "project_deep_dive" | "backend_fundamentals" | "rag_agent_review";
 type CodingCategoryId = "leetcode_core" | "ai_ops";
@@ -156,6 +156,13 @@ const modeOptions: ModeOption[] = [
     detail: "LeetCode 高频题、MHA/Attention/LayerNorm 等实现题",
     icon: Code,
   },
+  {
+    id: "full_mock",
+    title: "完整模拟",
+    description: "一场完整技术面试",
+    detail: "依次覆盖简历深挖、八股基础、手撕代码和综合追问，最后生成报告",
+    icon: Workflow,
+  },
 ];
 
 const knowledgeCategories: CategoryOption<KnowledgeCategoryId>[] = [
@@ -258,14 +265,14 @@ function toApiMessages(messages: TrainingMessage[]) {
   return messages.map(({ role, content }) => ({ role, content }));
 }
 
-function createEmptySession(): TrainingSession {
+function createEmptySession(maxRounds = 5): TrainingSession {
   return {
     messages: [],
     answerInput: "",
     debrief: "",
     phase: "opening",
     round: 0,
-    maxRounds: 5,
+    maxRounds,
   };
 }
 
@@ -297,7 +304,13 @@ function App() {
   const selectedMode = mode ?? "knowledge";
   const activeModeOption = modeOptions.find((item) => item.id === selectedMode) ?? modeOptions[0];
   const activeCategoryId =
-    selectedMode === "knowledge" ? knowledgeCategory : selectedMode === "resume" ? resumeScenario : codingCategory;
+    selectedMode === "knowledge"
+      ? knowledgeCategory
+      : selectedMode === "resume"
+        ? resumeScenario
+        : selectedMode === "coding"
+          ? codingCategory
+          : "full_mock";
   const activeSessionKey = getSessionKey(selectedMode, activeCategoryId);
   const activeSession = sessionsByKey[activeSessionKey] ?? createEmptySession();
   const hasStarted = activeSession.messages.length > 0 || activeSession.phase !== "opening";
@@ -311,8 +324,19 @@ function App() {
 
   function clearResumeSessions() {
     setSessionsByKey((current) =>
-      Object.fromEntries(Object.entries(current).filter(([sessionKey]) => !sessionKey.startsWith("resume:"))),
+      Object.fromEntries(
+        Object.entries(current).filter(
+          ([sessionKey]) => !sessionKey.startsWith("resume:") && !sessionKey.startsWith("full_mock:"),
+        ),
+      ),
     );
+  }
+
+  function focusAnswerInput() {
+    setTimeout(() => {
+      answerRef.current?.scrollIntoView({ block: "center", behavior: "smooth" });
+      answerRef.current?.focus();
+    }, 0);
   }
 
   function updateResume(nextText: string, nextFilename = resumeFilename, nextWarning = "") {
@@ -416,9 +440,9 @@ function App() {
       round: nextRound,
       max_rounds: session.maxRounds,
       messages: toApiMessages(nextMessages),
-      resume_text: requestMode === "resume" ? resumeText.trim() : "",
-      resume_filename: requestMode === "resume" ? resumeFilename : "",
-      job_target: requestMode === "resume" ? jobTarget.trim() : "",
+      resume_text: requestMode === "resume" || requestMode === "full_mock" ? resumeText.trim() : "",
+      resume_filename: requestMode === "resume" || requestMode === "full_mock" ? resumeFilename : "",
+      job_target: requestMode === "resume" || requestMode === "full_mock" ? jobTarget.trim() : "",
       topic_id: requestMode === "knowledge" ? session.item?.id ?? "" : "",
       problem_id: requestMode === "coding" ? session.item?.id ?? "" : "",
       language: requestMode === "coding" ? language.trim() || "Python" : "",
@@ -479,7 +503,8 @@ function App() {
     if (!mode) {
       return null;
     }
-    const categoryId = mode === "knowledge" ? knowledgeCategory : mode === "resume" ? resumeScenario : codingCategory;
+    const categoryId =
+      mode === "knowledge" ? knowledgeCategory : mode === "resume" ? resumeScenario : mode === "coding" ? codingCategory : "full_mock";
     return {
       mode,
       categoryId,
@@ -493,20 +518,20 @@ function App() {
     if (!context || !beginRequest()) {
       return;
     }
-    if (context.mode === "resume" && resumeText.trim().length < 30) {
+    if ((context.mode === "resume" || context.mode === "full_mock") && resumeText.trim().length < 30) {
       finishRequest();
       setError("请先上传或粘贴至少 30 个字的简历内容，面试官才能围绕简历细节追问。");
       return;
     }
 
-    const emptySession = createEmptySession();
+    const emptySession = createEmptySession(context.mode === "full_mock" ? 6 : 5);
     replaceSession(context.sessionKey, emptySession);
     setError("");
 
     try {
       const data = await requestTraining("opening", 0, [], context.mode, context.categoryId, emptySession);
       applyTrainingResponse(data, [], context.sessionKey);
-      setTimeout(() => answerRef.current?.focus(), 0);
+      focusAnswerInput();
     } catch (caughtError) {
       const message = caughtError instanceof Error ? caughtError.message : "请求失败，请稍后重试。";
       setError(message);
@@ -551,7 +576,7 @@ function App() {
       setError(message);
     } finally {
       finishRequest();
-      answerRef.current?.focus();
+      focusAnswerInput();
     }
   }
 
@@ -601,9 +626,9 @@ function App() {
   }
 
   function resetTraining() {
-    replaceSession(activeSessionKey, createEmptySession());
+    replaceSession(activeSessionKey, createEmptySession(selectedMode === "full_mock" ? 6 : 5));
     setError("");
-    answerRef.current?.focus();
+    focusAnswerInput();
   }
 
   function updateAnswerInput(value: string) {
@@ -629,7 +654,13 @@ function App() {
   }[connectionState];
 
   const panelTitle =
-    selectedMode === "knowledge" ? "八股专项训练" : selectedMode === "resume" ? "简历经历追问" : "手撕代码训练";
+    selectedMode === "knowledge"
+      ? "八股专项训练"
+      : selectedMode === "resume"
+        ? "简历经历追问"
+        : selectedMode === "coding"
+          ? "手撕代码训练"
+          : "完整模拟面试";
   const emptyState = {
     knowledge: {
       title: "选择分类，开始八股追问",
@@ -643,13 +674,17 @@ function App() {
       title: "选择题类，开始手撕代码",
       body: "先讲思路和复杂度，再粘贴代码；AI 会按正确性、边界和表达给反馈。",
     },
+    full_mock: {
+      title: "上传简历，开始完整模拟",
+      body: "完整模拟会依次覆盖简历深挖、八股基础、手撕代码和综合追问，最后生成一份面试报告。",
+    },
   }[selectedMode];
   const answerPlaceholder =
     selectedMode === "coding"
       ? "粘贴你的思路、复杂度分析和代码。手撕代码模式支持多行输入，请用按钮提交。"
       : hasStarted
         ? "输入你的回答，Enter 发送，Shift+Enter 换行"
-        : selectedMode === "resume"
+        : selectedMode === "resume" || selectedMode === "full_mock"
           ? "先上传或粘贴简历并开始该场景面试"
           : "先选择分类并开始训练";
 
@@ -718,6 +753,68 @@ function App() {
           <div className="training-note">
             <strong>评审方式</strong>
             <span>这一版不运行代码，重点检查思路、复杂度、边界样例和 AI 算子 shape/数值稳定性。</span>
+          </div>
+        </>
+      );
+    }
+
+    if (selectedMode === "full_mock") {
+      return (
+        <>
+          <div className="training-note">
+            <strong>完整模拟流程</strong>
+            <span>需要简历。系统会按真实面试节奏覆盖简历深挖、八股基础、手撕代码和综合追问，结束后生成完整报告。</span>
+          </div>
+
+          <div className="field-group">
+            <span className="field-label">上传简历</span>
+            <label className="upload-card" htmlFor="resume-file">
+              <Upload size={18} />
+              <span>{isUploading ? "正在解析..." : resumeFilename || "选择 PDF / DOCX / TXT 简历"}</span>
+              <small>{resumeCharCount ? `${resumeCharCount} 字符已就绪` : "文本 PDF 直接解析，扫描 PDF 会尝试 OCR"}</small>
+            </label>
+            <input
+              id="resume-file"
+              aria-label="上传简历文件"
+              className="file-input"
+              type="file"
+              accept=".pdf,.docx,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain"
+              onChange={handleFileChange}
+              disabled={isLoading || isUploading}
+            />
+            {resumeWarning ? <p className="warning-note">{resumeWarning}</p> : null}
+          </div>
+
+          <label className="field-group" htmlFor="resume-text">
+            <span className="field-label">简历内容（可粘贴备用）</span>
+            <textarea
+              id="resume-text"
+              value={resumeText}
+              onChange={(event) => updateResume(event.target.value, resumeFilename || "manual-resume.txt")}
+              placeholder="完整模拟建议提供完整简历，包含教育经历、技能、项目、实习和目标岗位。"
+              rows={7}
+              disabled={isLoading || isUploading}
+            />
+          </label>
+
+          <label className="field-group" htmlFor="job-target">
+            <span className="field-label">目标岗位</span>
+            <input
+              id="job-target"
+              value={jobTarget}
+              onChange={(event) => setJobTarget(event.target.value)}
+              placeholder="例如：后端开发实习、AI 应用开发实习"
+              disabled={isLoading || isUploading}
+            />
+          </label>
+
+          <div className="sample-buttons" aria-label="样例简历">
+            {sampleResumes.map((sample) => (
+              <button className="secondary-button compact-text" key={sample.filename} type="button" onClick={() => useSampleResume(sample)} disabled={isLoading || isUploading}>
+                <FileText size={15} />
+                <span>{sample.label}</span>
+              </button>
+            ))}
           </div>
         </>
       );
@@ -952,7 +1049,7 @@ function App() {
                     {message.role === "assistant" && (message.sourceCards?.length || message.resumeEvidence || message.riskHypothesis) ? (
                       <section className="evidence-panel" aria-label="本轮追问依据">
                         <div className="evidence-row">
-                          <strong>{selectedMode === "resume" ? "简历证据" : "训练依据"}</strong>
+                          <strong>{selectedMode === "resume" || selectedMode === "full_mock" ? "简历证据" : "训练依据"}</strong>
                           <span>{message.resumeEvidence || "已基于当前训练项生成追问"}</span>
                         </div>
                         <div className="evidence-row">

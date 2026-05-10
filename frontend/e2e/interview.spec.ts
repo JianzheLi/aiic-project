@@ -128,6 +128,29 @@ async function mockTraining(page: import("@playwright/test").Page) {
       return;
     }
 
+    if (request.mode === "full_mock") {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          ...base,
+          reply: isSummary
+            ? "## 面试结论\n整体中等，简历项目能讲清背景，但八股和手撕边界还不稳。\n\n## 维度评分\n\n| 维度 | 评级 | 证据 | 主要问题 | 改进动作 |\n| --- | --- | --- | --- | --- |\n| 简历/项目可信度 | 中 | 能说明 RAG 项目 | 坏例证据不足 | 补充一次真实排查过程 |\n\n## 最可能影响结果的 5 个问题\n1. chunk 坏例归因不清。"
+            : request.phase === "opening"
+              ? "完整模拟第一轮：简历里你写了课程问答系统。请说明你个人负责的检索链路，以及一次真实坏例是怎么定位的？"
+              : request.round === 1
+                ? "八股轮：请解释 Redis 缓存击穿和缓存穿透的区别，并说明各自的常见处理方式。"
+                : "手撕轮：请实现反转链表，先说明指针更新顺序、复杂度和空链表边界。",
+          source_cards: sourceCards(["project", "backend", "coding"]),
+          question_tags: ["project", "backend", "coding"],
+          resume_evidence: "项目：智能课程问答系统，负责 PDF 解析、chunk 策略、检索链路。",
+          risk_hypothesis: "完整模拟需要验证项目可信度、基础和手撕代码。",
+          item: null,
+        }),
+      });
+      return;
+    }
+
     await route.fulfill({
       status: 200,
       contentType: "application/json",
@@ -160,7 +183,8 @@ test("starts from a three-mode training landing page", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "AI 模拟面试官" })).toBeVisible();
   await expect(page.getByRole("button", { name: /八股知识点/ })).toBeVisible();
   await expect(page.getByRole("button", { name: /简历经历/ })).toBeVisible();
-  await expect(page.getByRole("button", { name: /手撕代码/ })).toBeVisible();
+  await expect(page.getByRole("button", { name: /^手撕代码 算法题/ })).toBeVisible();
+  await expect(page.getByRole("button", { name: /完整模拟/ })).toBeVisible();
 });
 
 test("runs knowledge practice without a resume", async ({ page }) => {
@@ -200,7 +224,7 @@ test("keeps the resume upload flow in the resume mode", async ({ page }) => {
 
 test("runs coding practice and reviews pasted code", async ({ page }) => {
   await page.goto("/");
-  await page.getByRole("button", { name: /手撕代码/ }).click();
+  await page.getByRole("button", { name: /^手撕代码 算法题/ }).click();
   await page.getByRole("radio", { name: /AI 算子/ }).click();
   await page.getByRole("button", { name: /开始手撕代码/ }).click();
 
@@ -211,6 +235,26 @@ test("runs coding practice and reviews pasted code", async ({ page }) => {
   await page.getByRole("button", { name: "提交代码" }).click();
   await expect(page.getByText("缺少 sqrt(D) 缩放")).toBeVisible();
   await expect(page.getByText("mask 在 softmax 前还是后处理")).toBeVisible();
+});
+
+test("runs a full mock interview and generates a report", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: /完整模拟/ }).click();
+  await page.getByRole("button", { name: /开始完整模拟/ }).click();
+  await expect(page.getByRole("alert")).toContainText("上传或粘贴至少 30 个字");
+
+  await page.getByRole("button", { name: "RAG 简历" }).click();
+  await page.getByRole("button", { name: /开始完整模拟/ }).click();
+  await expect(page.getByText("完整模拟第一轮")).toBeVisible();
+  await expect(page.getByText("第 1 / 6 轮")).toBeVisible();
+
+  await page.getByLabel("你的回答").fill("我负责 PDF 解析、chunk 策略和 Milvus 检索链路，坏例主要是章节混淆。");
+  await page.getByRole("button", { name: "发送回答" }).click();
+  await expect(page.getByText("缓存击穿")).toBeVisible();
+
+  await page.getByRole("button", { name: "结束并复盘" }).click();
+  await expect(page.getByLabel("训练反馈").getByRole("heading", { name: "面试结论" })).toBeVisible();
+  await expect(page.getByLabel("训练反馈").getByText("chunk 坏例归因不清。")).toBeVisible();
 });
 
 test("keeps conversations isolated across modes", async ({ page }) => {
@@ -241,6 +285,20 @@ test("renders cleanly on a mobile viewport", async ({ page }) => {
   await page.goto("/");
 
   await expect(page.getByRole("heading", { name: "AI 模拟面试官" })).toBeVisible();
-  await expect(page.getByRole("button", { name: /手撕代码/ })).toBeVisible();
+  await expect(page.getByRole("button", { name: /^手撕代码 算法题/ })).toBeVisible();
   expect(consoleErrors).toEqual([]);
+});
+
+test("allows scrolling to the composer on a short mobile viewport", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 620 });
+  await page.goto("/");
+  await page.getByRole("button", { name: /^手撕代码 算法题/ }).click();
+  await page.getByRole("button", { name: /开始手撕代码/ }).click();
+
+  const canPageScroll = await page.evaluate(() => (document.scrollingElement?.scrollHeight ?? 0) > window.innerHeight);
+  expect(canPageScroll).toBe(true);
+  await page.mouse.wheel(0, 900);
+  await expect(page.getByLabel("你的回答")).toBeInViewport();
+  await page.getByLabel("你的回答").fill("用矩阵乘法算 attention score，再做缩放、mask 和 softmax。");
+  await expect(page.getByRole("button", { name: "提交代码" })).toBeVisible();
 });
