@@ -1,0 +1,62 @@
+\documentclass{resume}
+
+\begin{document}
+\pagenumbering{gobble}
+
+\resumeheader
+  {images/pku_logo_red.png}
+  {李明轩 \quad AI 应用开发实习候选人}
+  {limingxuan@example.com \quad|\quad 138-0000-2026 \quad|\quad GitHub: github.com/example/agent-interview-demo}
+  {}
+
+\section{教育经历}
+\datedsubsection{\textbf{北京大学 \quad 计算机科学与技术 本科}}{2022年09月 -- 2026年07月}
+GPA 3.72/4.00，主修课程：数据结构、操作系统、数据库系统、机器学习、自然语言处理、分布式系统。
+
+\section{求职意向}
+AI 应用开发实习 / LLM Agent 工程实习。希望参与 RAG、Agent 工作流、模型服务评估和工程化部署相关工作。
+
+\section{专业技能}
+\begin{itemize}
+  \item \textbf{AI/LLM}：熟悉 RAG 基本链路、embedding 检索、rerank、prompt 约束、工具调用和 Agent 状态机；了解 LangGraph、OpenAI-compatible API、DeepSeek API。
+  \item \textbf{后端工程}：熟悉 Python、FastAPI、MySQL、Redis、Docker Compose；能设计 REST API、异步任务和基础日志观测。
+  \item \textbf{检索与评估}：使用 Milvus/FAISS 构建向量检索原型，能从 bad case、召回片段、答案引用和人工评估集定位问题。
+  \item \textbf{基础能力}：掌握常见数据结构与算法，熟悉缓存一致性、事务隔离、消息队列幂等、接口限流等后端八股。
+\end{itemize}
+
+\section{项目经历}
+\projecttitle{智能课程问答系统}{面向校内课程 PDF 的 RAG 问答系统，支持上传讲义、章节级检索、答案引用和坏例复盘。}
+\begin{itemize}
+  \item 负责 PDF 文本解析、chunk 策略、Milvus 向量库写入、FastAPI 查询接口和 Docker Compose 部署。
+  \item 使用 bge embedding 初筛候选片段，再用 reranker 重排后拼接上下文；通过章节标题、页码和引用片段降低幻觉。
+  \item 做过坏例分析：相邻章节内容相似时召回混淆，导致答案引用了错误章节；后续增加章节元数据过滤和引用校验。
+  \item 设计 60 条人工评估样例，记录召回片段、最终答案、引用位置和人工判定，用于比较 chunk 大小与 topK 设置。
+\end{itemize}
+
+\projecttitle{多 Agent 简历修改助手}{把简历诊断、岗位匹配、修改建议和审阅拆成多个节点，形成可追踪的 Agent 工作流。}
+\begin{itemize}
+  \item 使用 LangGraph 管理 Planner、Retriever、Editor、Reviewer 四类节点，负责状态对象、失败重试和工具调用日志。
+  \item 基于岗位 JD 抽取能力关键词，再对简历项目描述做真实性风险标注，重点检查个人贡献、指标、技术取舍和失败路径。
+  \item 为每次修改保存修改原因和证据来源，避免模型直接生成无法解释的夸大表述。
+\end{itemize}
+
+\projecttitle{校园交易平台后端}{课程设计项目，包含商品发布、订单创建、库存扣减、缓存和异步通知。}
+\begin{itemize}
+  \item 使用 Spring Boot、MySQL、Redis 和 RabbitMQ 实现订单链路；负责缓存策略、消息通知和 Docker 部署脚本。
+  \item 对商品详情做 Redis 缓存，采用先更新数据库再删除缓存的策略，并通过过期时间和失败重试降低不一致风险。
+\end{itemize}
+
+\section{实习与科研经历}
+\datedsubsection{\textbf{智能软件实验室 \quad 本科生科研助理}}{2025年03月 -- 2025年12月}
+\begin{itemize}
+  \item 参与 LLM 应用评估工具调研，整理 RAG 质量评估、Agent 工具调用失败和中文技术面试问法资料卡。
+  \item 协助搭建内部 demo，记录模型输出、检索证据和人工评分，形成可复现实验日志。
+\end{itemize}
+
+\section{奖项与其他}
+\begin{itemize}
+  \item 全国大学生计算机系统能力竞赛校级二等奖；英语 CET-6；熟练阅读英文技术文档。
+  \item 本简历为 AI 模拟面试官 demo 的脱敏假数据，仅用于测试 PDF 简历解析和面试追问效果。
+\end{itemize}
+
+\end{document}

@@ -640,6 +640,26 @@ function App() {
     updateResume(sample.text, sample.filename);
   }
 
+  async function usePdfSampleResume() {
+    if (isLoading || isUploading) {
+      return;
+    }
+    setJobTarget("AI 应用开发实习");
+    setError("");
+    try {
+      const response = await fetch("/samples/fake-agent-resume.pdf");
+      if (!response.ok) {
+        throw new Error("PDF 样例简历加载失败，请手动上传文件。");
+      }
+      const blob = await response.blob();
+      const file = new File([blob], "fake-agent-resume.pdf", { type: "application/pdf" });
+      await uploadResume(file);
+    } catch (caughtError) {
+      const message = caughtError instanceof Error ? caughtError.message : "PDF 样例简历加载失败，请手动上传文件。";
+      setError(message);
+    }
+  }
+
   function enterMode(nextMode: TrainingMode) {
     setMode(nextMode);
     setError("");
@@ -809,6 +829,10 @@ function App() {
           </label>
 
           <div className="sample-buttons" aria-label="样例简历">
+            <button className="secondary-button compact-text" type="button" onClick={() => void usePdfSampleResume()} disabled={isLoading || isUploading}>
+              <FileText size={15} />
+              <span>PDF 样例简历</span>
+            </button>
             {sampleResumes.map((sample) => (
               <button className="secondary-button compact-text" key={sample.filename} type="button" onClick={() => useSampleResume(sample)} disabled={isLoading || isUploading}>
                 <FileText size={15} />
@@ -867,6 +891,10 @@ function App() {
         </label>
 
         <div className="sample-buttons" aria-label="样例简历">
+          <button className="secondary-button compact-text" type="button" onClick={() => void usePdfSampleResume()} disabled={isLoading || isUploading}>
+            <FileText size={15} />
+            <span>PDF 样例简历</span>
+          </button>
           {sampleResumes.map((sample) => (
             <button className="secondary-button compact-text" key={sample.filename} type="button" onClick={() => useSampleResume(sample)} disabled={isLoading || isUploading}>
               <FileText size={15} />

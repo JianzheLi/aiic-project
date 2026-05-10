@@ -210,11 +210,13 @@ test("keeps the resume upload flow in the resume mode", async ({ page }) => {
   await page.getByRole("button", { name: /开始简历经历/ }).click();
   await expect(page.getByRole("alert")).toContainText("上传或粘贴至少 30 个字");
 
-  await page.getByLabel("上传简历文件").setInputFiles({
-    name: "resume.txt",
-    mimeType: "text/plain",
-    buffer: Buffer.from(resumeText),
-  });
+  const pdfResumeButton = page.getByRole("button", { name: "PDF 样例简历" });
+  await expect(pdfResumeButton).toBeVisible();
+  const extractRequestPromise = page.waitForRequest("**/api/resume/extract");
+  await pdfResumeButton.click();
+  const extractRequestBody = (await extractRequestPromise).postDataBuffer()?.toString("utf8") ?? "";
+  expect(extractRequestBody).toContain('filename="fake-agent-resume.pdf"');
+  expect(extractRequestBody).toContain("application/pdf");
   await expect(page.getByText("resume.txt")).toBeVisible();
   await expect(page.getByLabel("简历内容（可粘贴备用）")).toContainText("智能课程问答系统");
 
@@ -245,7 +247,8 @@ test("runs a full mock interview and generates a report", async ({ page }) => {
   await page.getByRole("button", { name: /开始完整模拟/ }).click();
   await expect(page.getByRole("alert")).toContainText("上传或粘贴至少 30 个字");
 
-  await page.getByRole("button", { name: "RAG 简历" }).click();
+  await page.getByRole("button", { name: "PDF 样例简历" }).click();
+  await expect(page.getByLabel("简历内容（可粘贴备用）")).toContainText("智能课程问答系统");
   await page.getByRole("button", { name: /开始完整模拟/ }).click();
   await expect(page.getByText("项目轮")).toBeVisible();
   await expect(page.getByText("第 1 / 8 轮")).toBeVisible();

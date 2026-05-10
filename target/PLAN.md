@@ -122,6 +122,10 @@
 ### 提交材料
 
 - [x] 准备 Product Memo 草稿，详见 `target/product-delivery/product-memo.md`。
+- [x] 准备 Product Memo LaTeX/PDF，详见 `target/product-delivery/product-memo.tex` 和 `target/product-delivery/product-memo.pdf`。
+- [x] 准备 Demo Beamer PPT，详见 `target/product-delivery/demo-slides.tex` 和 `target/product-delivery/demo-slides.pdf`。
+- [x] 准备脱敏 LaTeX 假简历 PDF 样例，并接入前端 `PDF 样例简历` 按钮。
+- [x] 按挑战说明把两个评审公钥追加到服务器 `authorized_keys`。
 - [x] 准备可作为 Product Memo 原料的调研报告：`target/research/final-report/ai-interviewer-research-report.md` 和 `target/research/final-report/ai-interviewer-research-report.pdf`。
 - [x] 准备 3 分钟以内 Demo 视频脚本，详见 `target/product-delivery/demo-video-script.md`。
 - [ ] 提交 git commit 并 push 到远程仓库。
@@ -154,3 +158,4 @@
 - 2026-05-10：收敛 RAG/Agent 场景的追问强度，避免一次要求坏例、根因分层、topK、rerank、召回率和准确率全部回答；critic 会拦截过度索要精确数字的问题。
 - 2026-05-10：根据产品新方向大改为三入口训练平台：八股知识点、简历经历、手撕代码分开；八股增加后端/数据库、搜广推、Agent/LLM、AI 算法分类；手撕代码增加 LeetCode 高频题和 AI 算子实现题；首版采用内置题库和 AI 静态代码评审，不做实时 LeetCode 抓取或代码沙箱执行。
 - 2026-05-10：新增完整模拟入口，把三个专项强化串成一场完整技术面试，并在结束后生成结构化面试报告；完整模拟由 AI 判断下一问方向，要求每个板块至少两轮，八股必须和简历技术栈/目标岗位相关；同时修复小屏滚动导致无法触达输入框的问题。
+- 2026-05-10：完成最终提交材料补齐：LaTeX Product Memo、Beamer Demo PPT、Agent/RAG 假简历 PDF 样例、架构图生成 prompt，并把挑战要求的两个 SSH 公钥追加到服务器。

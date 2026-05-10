@@ -1,0 +1,87 @@
+\documentclass[UTF8,zihao=5]{ctexart}
+\usepackage[a4paper,margin=1.18cm]{geometry}
+\usepackage{enumitem}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.16em}
+\setlist[itemize]{leftmargin=1.15em,itemsep=0.02em,topsep=0.02em}
+\setlist[enumerate]{leftmargin=1.35em,itemsep=0.02em,topsep=0.02em}
+\hypersetup{colorlinks=true,urlcolor=blue,linkcolor=blue}
+
+\title{\vspace{-2.0em}AI 模拟面试官 Product Memo}
+\author{16 小时 AI Agent 产品挑战}
+\date{2026-05-10}
+
+\begin{document}
+\maketitle
+\vspace{-1.7em}
+
+\section*{1. 产品概念：目标、定位与核心功能}
+\textbf{定位：}面向中国本科生技术实习和 AI 应用岗位面试准备的 AI 模拟面试训练工具。它不是通用聊天机器人或题库网站，而是围绕用户自己的简历、目标岗位和回答表现连续追问，并输出结构化复盘。
+
+\textbf{问题：}学生知道要背八股、刷算法、改简历，但很难获得高频、低成本、接近真实面试的“被追问”体验。尤其是 RAG/Agent/LLM 项目，真实面试官会追个人贡献、技术取舍、坏例归因、指标验证和工程落地；通用 ChatGPT 往往变成知识讲解，不能稳定压测简历漏洞。
+
+\textbf{核心功能：}
+\begin{itemize}
+  \item \textbf{简历输入：}支持 PDF/DOCX/TXT；文本 PDF 直接解析，扫描 PDF 本地 OCR 兜底，并提供脱敏 LaTeX PDF 样例。
+  \item \textbf{四个训练入口：}八股知识点、简历经历、手撕代码、完整模拟。
+  \item \textbf{Agentic RAG 追问：}每轮基于资料卡、简历证据和历史回答生成问题，再用 critic 自检是否过泛、是否脱离简历、是否过度索要不合理数字。
+  \item \textbf{结构化复盘：}给出挂点、维度反馈、改进动作和下一轮训练方向。
+\end{itemize}
+
+\section*{2. 用户与市场洞察：为什么有价值}
+三轮 desk research 共整理 456 条结构化输入：小红书技术面经 158 条、面试追问链/面试官视角 204 条、项目样本 36 条、岗位 JD 50 条、竞品体验 8 个。高频痛点集中在项目深挖、八股基础、算法/手撕、LLM 专项和追问压力。
+
+\begin{center}
+\footnotesize
+\begin{tabular}{lrr}
+\toprule
+痛点标签 & 样本数 & 产品启发 \\
+\midrule
+项目深挖 & 114 & 训练必须从简历项目出发，而不是随机问题 \\
+八股基础 & 95 & 八股要和简历技术栈关联，避免死背定义 \\
+算法/手撕 & 92 & 需要代码思路、复杂度、边界条件反馈 \\
+LLM 专项 & 67 & RAG/Agent 项目要追工程真实性和评估 \\
+追问压力 & 67 & 产品要连续追问，而不是一问一答 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+竞品和替代方案的共同缺口是“个性化连续追问 + 可执行复盘”。题库能提供题目，通用聊天机器人能解释概念，简历修改工具能润色表达，但它们很难稳定模拟真实面试官从简历中发现风险、沿回答继续追问，并沉淀下一轮训练计划。
+
+\section*{3. 设计与实现方案}
+\textbf{用户流程：}选择训练入口；上传 PDF 简历或使用内置 PDF 样例；AI 面试官提问；用户回答；系统展示追问依据；结束后生成复盘报告。
+
+\textbf{实现概要：}前端 Vite + React，后端 FastAPI，Docker Compose 部署；浏览器只访问 \texttt{3000}，前端通过 \texttt{/api/*} 同源代理后端。后端接入 DeepSeek \texttt{deepseek-v4-pro} 的 OpenAI-compatible API，关键接口为 \texttt{/resume/extract} 和 \texttt{/training/message}。简历解析使用 PyMuPDF/pypdf/python-docx/Tesseract OCR。Agentic RAG 采用轻量状态机、资料卡检索、问题生成、critic 重写和结构化复盘，不引入重型 agent 框架，以降低 16 小时内的部署风险。
+
+\textbf{当前可访问材料：}公网 Demo：\url{http://8.139.254.60:3000/}；GitHub：\url{https://github.com/JianzheLi/aiic-project}。
+
+\section*{4. 商业目标与指标}
+\textbf{短期目标：}验证“简历驱动的连续追问”是否比直接使用通用聊天机器人更有训练价值。核心 KPI：
+\begin{itemize}
+  \item 激活率：上传或加载简历后成功开始第一轮训练的用户占比；完成率：完成至少 3 轮并生成复盘的会话占比。
+  \item 复练率：24 小时内再次进入同一挂点训练的用户占比；反馈质量：问题贴合度、复盘可执行性 1--5 分评分。
+\end{itemize}
+
+\textbf{成本与商业模式：}MVP 主要成本是 LLM token、云服务器和 OCR/文件解析资源。早期可做 freemium：免费用户每天有限次数训练，付费用户获得完整模拟、历史复盘、JD 匹配和更长报告。B 端面向高校就业指导中心、实验室/社团和求职训练营提供批量账号与训练数据看板。
+
+\section*{5. 行动计划与下一步}
+\begin{center}
+\footnotesize
+\begin{tabular}{p{0.16\linewidth}p{0.54\linewidth}p{0.22\linewidth}}
+\toprule
+时间 & 里程碑 & 优先级 \\
+\midrule
+1 周内 & 增加 JD 上传和岗位匹配；保存训练历史；扩充 RAG/Agent/后端资料卡 & P0 \\
+2--3 周 & 做用户闭环测试，收集评分；加入错题/挂点复练；完善完整模拟报告 & P0/P1 \\
+1 个月 & 引入语音转写、计时压力面、训练趋势；探索高校/社团试点 & P1 \\
+2--3 个月 & 形成题库与资料库运营流程，评估订阅或训练营合作模式 & P2 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+资源需求：产品/增长负责真实用户访谈和指标看板，全栈负责历史记录和权限系统，LLM 工程负责资料卡、评测集和 rubric。优先级保持“训练价值 > 功能数量 > UI 精致度”。
+
+\end{document}

@@ -14,7 +14,7 @@ http://8.139.254.60:3000/
 - 八股分类：后端/数据库、搜广推、Agent/LLM、AI 算法，覆盖纯知识点追问和回答漏洞反馈。
 - 手撕代码：内置 LeetCode 高频题和 AI 算子题，支持粘贴思路/代码后做静态评审。
 - 完整模拟：基于简历和前序回答由 AI 判断下一问方向；项目、简历相关八股、手撕和综合追问每个板块至少两轮，结束后生成 Markdown 面试报告。
-- 简历驱动：支持上传 PDF/DOCX/TXT，文字型 PDF 优先用 PyMuPDF + pypdf 提取文本层，扫描 PDF 才尝试 OCR，可粘贴文本兜底。
+- 简历驱动：支持上传 PDF/DOCX/TXT，内置一份 LaTeX 生成的 PDF 假简历样例；文字型 PDF 优先用 PyMuPDF + pypdf 提取文本层，扫描 PDF 才尝试 OCR，可粘贴文本兜底。
 - 本地 OCR：文本型 PDF 直接抽取，扫描 PDF 会尝试 Tesseract OCR 兜底。
 - Agentic RAG：每轮从资料卡检索技术依据，生成后用 critic 规则检查泛泛追问并重写。
 - 独立会话：八股分类、简历场景和手撕题类之间相互隔离，切换训练入口不串上下文。
@@ -23,6 +23,13 @@ http://8.139.254.60:3000/
 - 追问依据展示：前端展示简历证据、风险假设、问题标签和资料来源。
 - 默认模型：DeepSeek `deepseek-v4-pro`，对该模型启用 thinking 和 high reasoning effort。
 - 部署简单：FastAPI + Vite/React + Docker Compose，浏览器只访问 `3000`，前端通过 `/api/*` 同源代理后端。
+
+## 提交材料
+
+- Product Memo：`target/product-delivery/product-memo.pdf`
+- Demo Beamer：`target/product-delivery/demo-slides.pdf`
+- LaTeX 假简历样例：`target/product-delivery/sample-resume/fake-agent-resume.pdf`
+- 架构图生成 prompt：`target/product-delivery/architecture-diagram-prompt.txt`
 
 ## 技术栈
 

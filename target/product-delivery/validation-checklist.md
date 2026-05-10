@@ -2,9 +2,11 @@
 
 ## 自动化
 
-- [x] 后端 pytest：`.deps/backend-venv/bin/python -m pytest backend/tests -q`，23 passed。
+- [x] 后端 pytest：`cd backend && python3 -m pytest -q`，37 passed。
 - [x] 前端构建：`cd frontend && npm run build`，构建通过。
-- [x] 前端 E2E：`cd frontend && npm run test:e2e`，6 passed。
+- [x] 前端 E2E：`cd frontend && npm run test:e2e`，9 passed。
+- [x] LaTeX 编译：`product-memo.pdf`、`demo-slides.pdf`、`fake-agent-resume.pdf` 均由 XeLaTeX 生成。
+- [x] Product Memo 为 2 页 PDF；Demo Beamer 为 11 页路演版 PDF。
 
 ## 本地接口
 
@@ -12,6 +14,8 @@
 - [x] `curl http://localhost:3000/api/config`
 - [x] `POST /api/resume/extract` 能解析 TXT/DOCX/PDF 文本简历，并对扫描 PDF 尝试 OCR。
 - [x] 文字型 PDF 优先走 PyMuPDF/pypdf 文本层解析，不触发 OCR。
+- [x] `fake-agent-resume.pdf` 走文本层解析，`extraction_method="text"`、`ocr_used=false`、解析出 1614 字。
+- [x] 前端 `PDF 样例简历` 按钮会请求 `/samples/fake-agent-resume.pdf` 并复用上传解析链路。
 - [x] `POST /api/resume/extract` 文件上限默认 25MB，可通过 `RESUME_MAX_BYTES` 配置。
 - [x] `POST /api/interview/message` 能返回第一轮问题、资料依据、问题标签和风险假设。
 
@@ -28,6 +32,7 @@
 - [x] 公网 `/api/interview/message` 返回 `source_cards`、`question_tags`、`resume_evidence`、`risk_hypothesis`。
 - [x] 公网浏览器 smoke：样例简历、RAG 场景、后端场景、场景切回会话恢复均通过；无 console error。
 - [x] 公网浏览器 smoke：RAG/后端场景均能显示“本轮追问依据”。
+- [x] 服务器 `/root/.ssh/authorized_keys` 已追加挑战说明中的两个 `ssh-ed25519` 公钥，权限保持 `700/600`。
 
 ## 主动尝试的 Bug 场景
 

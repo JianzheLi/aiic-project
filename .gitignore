@@ -45,6 +45,11 @@ target/research/demand-validation-desk-research/data/*.json
 target/agentic-rag-upgrade/raw/
 target/agentic-rag-upgrade/downloads/
 
+# Local-only template zips used to generate final delivery PDFs. Commit generated
+# deliverables under target/product-delivery instead.
+demo/
+resume/
+
 # LaTeX build cache for generated reports
 target/research/final-report/*.aux
 target/research/final-report/*.out
